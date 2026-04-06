@@ -13,7 +13,7 @@ import {
   testLLMConnection,
   getSettings,
 } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from '../../../lib/icons/index.jsx';
 
 export default function LLMsPage() {
   const [provider, setProvider] = useState('ollama');

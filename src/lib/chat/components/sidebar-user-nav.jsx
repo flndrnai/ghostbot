@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun } from '../../icons/index.jsx';
 import { useSidebar, SidebarMenuButton } from './ui/sidebar.jsx';
 import {
   DropdownMenu,

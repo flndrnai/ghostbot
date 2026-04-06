@@ -6,7 +6,7 @@ import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { saveTelegramConfig, getTelegramStatus } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, Loader2, MessageSquare } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, Loader2, MessageSquare } from '../../../lib/icons/index.jsx';
 
 export default function TelegramPage() {
   const [botToken, setBotToken] = useState('');

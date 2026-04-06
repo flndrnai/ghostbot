@@ -6,7 +6,7 @@ import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { saveGitHubConfig, testGitHubConnection } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Github } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Github } from '../../../lib/icons/index.jsx';
 
 export default function GitHubPage() {
   const [token, setToken] = useState('');

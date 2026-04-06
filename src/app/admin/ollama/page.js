@@ -11,7 +11,7 @@ import {
   saveProviderConfig,
   getSettings,
 } from '../../../lib/admin/actions.js';
-import { CheckCircle, XCircle, Loader2, Cpu, HardDrive, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Cpu, HardDrive, Zap } from '../../../lib/icons/index.jsx';
 
 function formatSize(bytes) {
   if (!bytes) return '—';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
-import { Webhook, Zap } from 'lucide-react';
+import { Webhook, Zap } from '../../../lib/icons/index.jsx';
 
 export default function TriggersPage() {
   const [triggers, setTriggers] = useState([]);

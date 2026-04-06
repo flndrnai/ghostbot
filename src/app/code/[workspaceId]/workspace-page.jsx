@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft } from '../../../lib/icons/index.jsx';
 import { ensureWorkspaceContainer, createTerminalSession } from '../../../lib/code/actions.js';
 
 const TerminalView = dynamic(

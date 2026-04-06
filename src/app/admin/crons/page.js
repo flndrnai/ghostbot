@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
-import { Clock, Timer } from 'lucide-react';
+import { Clock, Timer } from '../../../lib/icons/index.jsx';
 
 export default function CronsPage() {
   const [crons, setCrons] = useState([]);

@@ -6,7 +6,7 @@ import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { saveChatSettings, getSettings } from '../../../lib/admin/actions.js';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle } from '../../../lib/icons/index.jsx';
 
 export default function ChatSettingsPage() {
   const [systemPrompt, setSystemPrompt] = useState('');

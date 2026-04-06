@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Star, Trash2, Pencil, X, Check } from 'lucide-react';
+import { Star, Trash2, Pencil, X, Check } from '../../icons/index.jsx';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from './ui/sidebar.jsx';
 import { useChatNav } from './chat-nav-context.jsx';
 import { renameChatAction, deleteChatAction, toggleStarAction } from '../actions.js';

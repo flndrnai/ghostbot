@@ -6,7 +6,7 @@ import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { getSettings } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, Bot } from 'lucide-react';
+import { Eye, EyeOff, Bot } from '../../../lib/icons/index.jsx';
 
 const AGENTS = [
   { id: 'claude-code', name: 'Claude Code', auth: ['oauth', 'api-key'], defaultAuth: 'api-key' },

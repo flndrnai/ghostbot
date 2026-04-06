@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../../../lib/auth/components/ui/button.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
-import { Box, Square, Trash2, RefreshCw, Loader2 } from 'lucide-react';
+import { Box, Square, Trash2, RefreshCw, Loader2 } from '../../../lib/icons/index.jsx';
 
 export default function ContainersPage() {
   const [containers, setContainers] = useState([]);

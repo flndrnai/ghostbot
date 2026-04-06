@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Settings, Plus } from 'lucide-react';
+import { MessageSquare, Settings, Plus } from '../../icons/index.jsx';
 import {
   Sidebar,
   SidebarHeader,

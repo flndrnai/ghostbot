@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Wrench, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Wrench, CheckCircle, XCircle } from '../../icons/index.jsx';
 
 function ToolCallCard({ toolName, args, result, isExpanded, onToggle }) {
   const hasResult = result !== undefined && result !== null;

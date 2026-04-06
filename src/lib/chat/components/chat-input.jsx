@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { ArrowUp, Square } from 'lucide-react';
+import { ArrowUp, Square } from '../../icons/index.jsx';
 
 export function ChatInput({ input, onInputChange, onSend, isLoading }) {
   const textareaRef = useRef(null);
