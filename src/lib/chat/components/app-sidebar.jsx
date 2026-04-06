@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { MessageSquare, Settings, Plus } from '../../icons/index.jsx';
 import { Sparkles } from 'lucide-react';
 import {
@@ -21,7 +21,12 @@ import { SidebarHistory } from './sidebar-history.jsx';
 
 export function AppSidebar({ session }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { open, isMobile, setOpenMobile } = useSidebar();
+
+  const isChat = pathname === '/' || pathname?.startsWith('/chat');
+  const isClusters = pathname?.startsWith('/clusters') || pathname?.startsWith('/cluster');
+  const isAdmin = pathname?.startsWith('/admin');
 
   function handleNewChat() {
     router.push('/');
@@ -64,20 +69,20 @@ export function AppSidebar({ session }) {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Chat" onClick={() => { router.push('/'); if (isMobile) setOpenMobile(false); }}>
+              <SidebarMenuButton isActive={isChat} tooltip="Chat" onClick={() => { router.push('/'); if (isMobile) setOpenMobile(false); }}>
                 <MessageSquare className="h-4 w-4" />
                 {open && 'Chat'}
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Clusters" onClick={() => { router.push('/clusters'); if (isMobile) setOpenMobile(false); }}>
+              <SidebarMenuButton isActive={isClusters} tooltip="Clusters" onClick={() => { router.push('/clusters'); if (isMobile) setOpenMobile(false); }}>
                 <Sparkles className="h-4 w-4" />
                 {open && 'Clusters'}
               </SidebarMenuButton>
             </SidebarMenuItem>
             {session?.user?.role === 'admin' && (
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Admin" onClick={() => { router.push('/admin'); if (isMobile) setOpenMobile(false); }}>
+                <SidebarMenuButton isActive={isAdmin} tooltip="Admin" onClick={() => { router.push('/admin'); if (isMobile) setOpenMobile(false); }}>
                   <Settings className="h-4 w-4" />
                   {open && 'Admin'}
                 </SidebarMenuButton>

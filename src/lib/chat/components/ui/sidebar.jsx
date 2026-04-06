@@ -144,7 +144,7 @@ export function SidebarMenuButton({ children, isActive, className, tooltip, onCl
         'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
         'hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
         'active:scale-[0.98] cursor-pointer',
-        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground font-medium',
+        isActive && 'bg-primary/10 text-primary font-medium border-l-2 border-primary',
         !open && 'justify-center px-0',
         className,
       )}
