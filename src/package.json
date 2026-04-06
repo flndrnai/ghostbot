@@ -1,0 +1,38 @@
+{
+  "name": "ghostbot",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Autonomous AI coding agent platform with self-learning memory",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "node server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "next": "^15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next-auth": "5.0.0-beta.30",
+    "next-themes": "^0.4.4",
+    "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.44.0",
+    "bcrypt-ts": "^6.0.0",
+    "lucide-react": "^0.468.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.0.0",
+    "@tailwindcss/postcss": "^4.1.4",
+    "tailwindcss": "^4.1.4",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.9"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

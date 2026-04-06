@@ -1,0 +1,25 @@
+'use server';
+
+export async function setupAdmin(email, password) {
+  if (!email || !password) {
+    return { error: 'Email and password are required' };
+  }
+
+  if (password.length < 8) {
+    return { error: 'Password must be at least 8 characters' };
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: 'Invalid email address' };
+  }
+
+  const { createFirstUser } = await import('../db/users.js');
+  const result = createFirstUser(email, password);
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  return { success: true };
+}
