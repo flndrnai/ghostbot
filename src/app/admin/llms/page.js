@@ -11,6 +11,7 @@ import {
   saveApiKey,
   getApiKeyStatus,
   testLLMConnection,
+  removeApiKey,
   getSettings,
 } from '../../../lib/admin/actions.js';
 import { CheckCircle, XCircle, Loader2 } from '../../../lib/icons/index.jsx';
@@ -35,7 +36,10 @@ export default function LLMsPage() {
     const providerDef = BUILTIN_PROVIDERS[provider];
     if (providerDef?.credentials?.length > 0) {
       getApiKeyStatus(providerDef.credentials[0].key).then((r) => setKeyConfigured(r.configured));
+    } else {
+      setKeyConfigured(false);
     }
+    setTestResult(null);
   }, [provider]);
 
   const providerDef = BUILTIN_PROVIDERS[provider];
@@ -49,10 +53,25 @@ export default function LLMsPage() {
 
   async function handleSaveKey() {
     if (!apiKey.trim()) return;
+    setSaving(true);
     const keyName = providerDef.credentials[0].key;
     await saveApiKey(keyName, apiKey.trim());
     setApiKey('');
     setKeyConfigured(true);
+    setSaving(false);
+
+    // Auto-test after saving
+    setTesting(true);
+    const result = await testLLMConnection();
+    setTestResult(result);
+    setTesting(false);
+  }
+
+  async function handleDisconnect() {
+    const keyName = providerDef.credentials[0].key;
+    await removeApiKey(keyName);
+    setKeyConfigured(false);
+    setTestResult(null);
   }
 
   async function handleTest() {
@@ -80,7 +99,7 @@ export default function LLMsPage() {
             <Label>Provider</Label>
             <select
               value={provider}
-              onChange={(e) => { setProvider(e.target.value); setModel(''); setTestResult(null); }}
+              onChange={(e) => { setProvider(e.target.value); setModel(''); }}
               className="flex h-12 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
             >
               {Object.entries(BUILTIN_PROVIDERS).map(([key, p]) => (
@@ -113,7 +132,7 @@ export default function LLMsPage() {
                 onChange={(e) => setModel(e.target.value)}
                 placeholder="e.g. qwen2.5:32b, llama3.2, mistral"
               />
-              <p className="text-xs text-muted-foreground">Enter the exact model name from <code>ollama list</code></p>
+              <p className="text-xs text-muted-foreground">Enter the exact model name from <code className="bg-muted px-1 rounded">ollama list</code></p>
             </div>
           )}
 
@@ -123,30 +142,43 @@ export default function LLMsPage() {
         </CardContent>
       </Card>
 
-      {/* API Key */}
+      {/* API Key — Connected / Not Connected states */}
       {needsKey && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">API Key</CardTitle>
-            <CardDescription>
-              {keyConfigured ? (
-                <span className="flex items-center gap-1 text-primary"><CheckCircle className="h-3.5 w-3.5" /> Key configured</span>
-              ) : (
-                <span className="flex items-center gap-1 text-muted-foreground"><XCircle className="h-3.5 w-3.5" /> Not configured</span>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{providerDef.credentials[0].label}</CardTitle>
+              {keyConfigured && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  Connected
+                </span>
               )}
-            </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>{providerDef.credentials[0].label}</Label>
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={keyConfigured ? '••••••••••••••••' : 'sk-...'}
-              />
-            </div>
-            <Button onClick={handleSaveKey} disabled={!apiKey.trim()}>Save Key</Button>
+            {keyConfigured ? (
+              /* Connected state — like the example image */
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="flex-1 text-sm font-mono text-muted-foreground">••••••••••••••••</span>
+                <Button onClick={handleDisconnect} size="sm" variant="destructive">
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              /* Not connected — show input */
+              <div className="space-y-3">
+                <Input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-..."
+                />
+                <Button onClick={handleSaveKey} disabled={!apiKey.trim() || saving}>
+                  {saving ? 'Connecting...' : 'Connect'}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -158,7 +190,7 @@ export default function LLMsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button onClick={handleTest} disabled={testing} variant="outline">
-            {testing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Testing...</> : 'Test Connection'}
+            {testing ? <><Loader2 className="h-4 w-4 mr-2" /> Testing...</> : 'Test Connection'}
           </Button>
           {testResult && (
             <div className={`rounded-xl px-4 py-3 text-sm ${testResult.success ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-destructive/10 border border-destructive/20 text-destructive'}`}>

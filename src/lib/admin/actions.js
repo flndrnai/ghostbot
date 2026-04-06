@@ -30,6 +30,15 @@ export async function saveApiKey(keyName, value) {
   return { success: true };
 }
 
+export async function removeApiKey(keyName) {
+  await requireAdmin();
+  const { deleteConfigSecret } = await import('../db/config.js');
+  deleteConfigSecret(keyName);
+  invalidateConfigCache(keyName);
+  resetAgent();
+  return { success: true };
+}
+
 export async function getApiKeyStatus(keyName) {
   await requireAdmin();
   const value = getConfigSecret(keyName);
@@ -122,7 +131,37 @@ export async function saveTelegramConfig({ botToken, chatId, webhookSecret }) {
     setConfigSecret('TELEGRAM_WEBHOOK_SECRET', webhookSecret);
     invalidateConfigCache('TELEGRAM_WEBHOOK_SECRET');
   }
+
+  // Send welcome message if chatId is provided
+  let welcomeSent = false;
+  if (botToken?.trim() && chatId?.trim()) {
+    try {
+      const { sendMessage } = await import('../tools/telegram.js');
+      await sendMessage(botToken.trim(), chatId.trim(), '👻 GhostBot connected! I\'m ready to help you code.');
+      welcomeSent = true;
+    } catch {
+      // Welcome message is best-effort
+    }
+  }
+
+  return { success: true, welcomeSent };
+}
+
+export async function removeTelegramConfig() {
+  await requireAdmin();
+  const { deleteConfigSecret } = await import('../db/config.js');
+  deleteConfigSecret('TELEGRAM_BOT_TOKEN');
+  deleteConfigSecret('TELEGRAM_WEBHOOK_SECRET');
+  setConfig('TELEGRAM_CHAT_ID', '');
+  invalidateConfigCache();
   return { success: true };
+}
+
+export async function getTelegramConfigStatus() {
+  await requireAdmin();
+  const token = getConfigSecret('TELEGRAM_BOT_TOKEN');
+  const chatIdVal = getConfig('TELEGRAM_CHAT_ID');
+  return { configured: !!token, chatId: chatIdVal || '' };
 }
 
 export async function getSettings() {
