@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Messages } from './messages.jsx';
 import { ChatInput } from './chat-input.jsx';
 import { useChatNav } from './chat-nav-context.jsx';
@@ -9,9 +9,9 @@ import { useChatNav } from './chat-nav-context.jsx';
 export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
   const { triggerRefresh } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
-  const isNewChat = !initialChatId;
+  const [localInput, setLocalInput] = useState('');
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, status, error, append } = useChat({
     api: '/stream/chat',
     id: chatIdRef.current || undefined,
     initialMessages,
@@ -19,11 +19,9 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
       chatId: chatIdRef.current,
     },
     onResponse(response) {
-      // Capture chatId from server for new chats
       const serverChatId = response.headers.get('X-Chat-Id');
       if (serverChatId && !chatIdRef.current) {
         chatIdRef.current = serverChatId;
-        // Update URL without full navigation
         window.history.replaceState(null, '', `/chat/${serverChatId}`);
       }
     },
@@ -32,13 +30,16 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
     },
   });
 
+  const isLoading = status === 'streaming' || status === 'submitted';
+
   const handleSend = useCallback(
-    (e) => {
-      e?.preventDefault();
-      if (!input.trim() || isLoading) return;
-      handleSubmit(e);
+    (text) => {
+      const message = text || localInput;
+      if (!message.trim() || isLoading) return;
+      setLocalInput('');
+      append({ role: 'user', content: message.trim() });
     },
-    [input, isLoading, handleSubmit],
+    [localInput, isLoading, append],
   );
 
   return (
@@ -50,9 +51,9 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         </div>
       )}
       <ChatInput
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSend={handleSend}
+        input={localInput}
+        onInputChange={setLocalInput}
+        onSend={handleSend}
         isLoading={isLoading}
       />
     </div>

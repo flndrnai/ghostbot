@@ -6,27 +6,32 @@ import { getConfig } from '../config.js';
 import { getChatById, createChat, saveMessage, updateChatTitle } from '../db/chats.js';
 import { recordTokenUsage } from '../db/token-usage.js';
 
+const STREAM_TIMEOUT_MS = 30000;
+
 export async function* chatStream(chatId, userId, userMessage) {
-  // Auto-create chat if needed
   let chat = getChatById(chatId);
   if (!chat) {
     createChat(userId, 'New Chat', chatId);
   }
 
-  // Persist user message
   saveMessage(chatId, 'user', userMessage);
 
-  // Load system prompt
   const systemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
 
-  // Get agent and token counter
-  const agent = await getAgent();
-  const tokenCounter = new TokenCounter();
+  let agent;
+  try {
+    agent = await getAgent();
+  } catch (error) {
+    yield { type: 'error', content: `Failed to initialize AI agent: ${error.message}. Check your LLM configuration in Admin > LLM Providers.` };
+    return;
+  }
 
+  const tokenCounter = new TokenCounter();
   let fullContent = '';
 
   try {
-    const stream = await agent.stream(
+    // Race stream against timeout to avoid hanging when LLM is unreachable
+    const streamPromise = agent.stream(
       {
         messages: [
           new SystemMessage(systemPrompt),
@@ -40,8 +45,13 @@ export async function* chatStream(chatId, userId, userMessage) {
       },
     );
 
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Connection to LLM timed out. Make sure your LLM provider is running and configured correctly in Admin settings.')), STREAM_TIMEOUT_MS),
+    );
+
+    const stream = await Promise.race([streamPromise, timeoutPromise]);
+
     for await (const [chunk] of stream) {
-      // AIMessageChunk — extract text content
       if (chunk.content) {
         const text = typeof chunk.content === 'string'
           ? chunk.content
@@ -57,21 +67,24 @@ export async function* chatStream(chatId, userId, userMessage) {
       }
     }
   } catch (error) {
-    const errorMsg = error.message || 'An error occurred while generating a response.';
+    const msg = error.message || 'An error occurred while generating a response.';
+    // Make common errors more user-friendly
+    let errorMsg = msg;
+    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+      errorMsg = 'Cannot connect to LLM. If using Ollama, make sure it is running. Configure your provider in Admin > LLM Providers.';
+    }
     yield { type: 'error', content: errorMsg };
     fullContent = `Error: ${errorMsg}`;
   }
 
-  // Persist assistant message
-  if (fullContent) {
-    const msg = saveMessage(chatId, 'assistant', fullContent);
+  if (fullContent && !fullContent.startsWith('Error:')) {
+    const savedMsg = saveMessage(chatId, 'assistant', fullContent);
 
-    // Record token usage
     const provider = getConfig('LLM_PROVIDER') || 'ollama';
     const model = getConfig('LLM_MODEL') || '';
     recordTokenUsage({
       chatId,
-      messageId: msg.id,
+      messageId: savedMsg.id,
       provider,
       model,
       promptTokens: tokenCounter.promptTokens,
@@ -79,9 +92,8 @@ export async function* chatStream(chatId, userId, userMessage) {
     });
   }
 
-  // Auto-title for new chats (fire-and-forget)
   chat = getChatById(chatId);
-  if (chat && chat.title === 'New Chat' && fullContent) {
+  if (chat && chat.title === 'New Chat' && fullContent && !fullContent.startsWith('Error:')) {
     autoTitle(chatId, userMessage).catch(() => {});
   }
 }
@@ -103,6 +115,6 @@ export async function autoTitle(chatId, userMessage) {
       updateChatTitle(chatId, title);
     }
   } catch {
-    // Silent failure — title stays as "New Chat"
+    // Silent failure
   }
 }

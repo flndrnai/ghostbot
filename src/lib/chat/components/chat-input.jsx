@@ -3,7 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 
-export function ChatInput({ input, handleInputChange, handleSend, isLoading }) {
+export function ChatInput({ input, onInputChange, onSend, isLoading }) {
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -16,8 +16,13 @@ export function ChatInput({ input, handleInputChange, handleSend, isLoading }) {
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend(e);
+      onSend();
     }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    onSend();
   }
 
   const hasValue = input?.trim().length > 0;
@@ -25,12 +30,12 @@ export function ChatInput({ input, handleInputChange, handleSend, isLoading }) {
   return (
     <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 py-4 sm:px-6 sm:py-5 safe-bottom">
       <div className="mx-auto max-w-3xl">
-        <form onSubmit={handleSend}>
+        <form onSubmit={handleSubmit}>
           <div className="relative">
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Send a message..."
               rows={1}

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '../../../lib/auth/components/ui/button.jsx';
 import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
+import { saveGitHubConfig, testGitHubConnection } from '../../../lib/admin/actions.js';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Github } from 'lucide-react';
 
 export default function GitHubPage() {
@@ -18,11 +19,7 @@ export default function GitHubPage() {
 
   async function handleSave() {
     setSaving(true);
-    const { saveApiKey } = await import('../../../lib/admin/actions.js');
-    const { setConfig } = await import('../../../lib/config.js');
-    if (token.trim()) await saveApiKey('GH_TOKEN', token.trim());
-    if (owner.trim()) setConfig('GH_OWNER', owner.trim());
-    if (repo.trim()) setConfig('GH_REPO', repo.trim());
+    await saveGitHubConfig({ token, owner, repo });
     setSaving(false);
     setToken('');
   }
@@ -30,13 +27,8 @@ export default function GitHubPage() {
   async function handleTest() {
     setTesting(true);
     setTestResult(null);
-    try {
-      const { testGitHubConnection } = await import('../../../lib/tools/github.js');
-      const result = await testGitHubConnection();
-      setTestResult(result);
-    } catch (error) {
-      setTestResult({ success: false, error: error.message });
-    }
+    const result = await testGitHubConnection();
+    setTestResult(result);
     setTesting(false);
   }
 

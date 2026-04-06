@@ -84,6 +84,27 @@ export async function saveChatSettings({ systemPrompt, maxTokens, temperature })
   return { success: true };
 }
 
+export async function saveGitHubConfig({ token, owner, repo }) {
+  await requireAdmin();
+  if (token?.trim()) {
+    setConfigSecret('GH_TOKEN', token.trim());
+    invalidateConfigCache('GH_TOKEN');
+  }
+  if (owner?.trim()) setConfig('GH_OWNER', owner.trim());
+  if (repo?.trim()) setConfig('GH_REPO', repo.trim());
+  return { success: true };
+}
+
+export async function testGitHubConnection() {
+  await requireAdmin();
+  try {
+    const { testGitHubConnection: test } = await import('../tools/github.js');
+    return await test();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getSettings() {
   await requireAdmin();
   return {
