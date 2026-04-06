@@ -14,5 +14,11 @@ export function registerNodeRuntime() {
   warmConfigCache();
   loadTriggers();
   loadCrons();
+
+  // Lazy import to avoid pulling Docker client at startup
+  import('./cluster/runtime.js')
+    .then((m) => m.startClusterRuntime())
+    .catch((err) => console.log('[cluster-runtime] skipped:', err.message));
+
   console.log('GhostBot initialized');
 }

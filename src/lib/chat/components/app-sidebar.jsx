@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Settings, Plus } from '../../icons/index.jsx';
+import { Sparkles } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -66,6 +67,12 @@ export function AppSidebar({ session }) {
               <SidebarMenuButton tooltip="Chat" onClick={() => { router.push('/'); if (isMobile) setOpenMobile(false); }}>
                 <MessageSquare className="h-4 w-4" />
                 {open && 'Chat'}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Clusters" onClick={() => { router.push('/clusters'); if (isMobile) setOpenMobile(false); }}>
+                <Sparkles className="h-4 w-4" />
+                {open && 'Clusters'}
               </SidebarMenuButton>
             </SidebarMenuItem>
             {session?.user?.role === 'admin' && (

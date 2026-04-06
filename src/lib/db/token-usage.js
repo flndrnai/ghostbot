@@ -36,3 +36,53 @@ export function getTokenUsageByChatId(chatId) {
 
   return result;
 }
+
+export function getTokenUsageSummary(days = 30) {
+  const db = getDb();
+  const since = Date.now() - days * 86400000;
+  const result = db
+    .select({
+      promptTokens: sql`SUM(${tokenUsage.promptTokens})`,
+      completionTokens: sql`SUM(${tokenUsage.completionTokens})`,
+      totalTokens: sql`SUM(${tokenUsage.totalTokens})`,
+      count: sql`COUNT(*)`,
+    })
+    .from(tokenUsage)
+    .where(sql`${tokenUsage.createdAt} > ${since}`)
+    .get();
+  return result;
+}
+
+export function getUsageByProvider(days = 30) {
+  const db = getDb();
+  const since = Date.now() - days * 86400000;
+  return db
+    .select({
+      provider: tokenUsage.provider,
+      model: tokenUsage.model,
+      promptTokens: sql`SUM(${tokenUsage.promptTokens})`,
+      completionTokens: sql`SUM(${tokenUsage.completionTokens})`,
+      totalTokens: sql`SUM(${tokenUsage.totalTokens})`,
+      count: sql`COUNT(*)`,
+    })
+    .from(tokenUsage)
+    .where(sql`${tokenUsage.createdAt} > ${since}`)
+    .groupBy(tokenUsage.provider, tokenUsage.model)
+    .all();
+}
+
+export function getDailyUsage(days = 14) {
+  const db = getDb();
+  const since = Date.now() - days * 86400000;
+  return db
+    .select({
+      day: sql`DATE(${tokenUsage.createdAt} / 1000, 'unixepoch')`,
+      totalTokens: sql`SUM(${tokenUsage.totalTokens})`,
+      count: sql`COUNT(*)`,
+    })
+    .from(tokenUsage)
+    .where(sql`${tokenUsage.createdAt} > ${since}`)
+    .groupBy(sql`DATE(${tokenUsage.createdAt} / 1000, 'unixepoch')`)
+    .orderBy(sql`DATE(${tokenUsage.createdAt} / 1000, 'unixepoch')`)
+    .all();
+}

@@ -85,7 +85,7 @@ export function workspaceDirExists(workspaceId) {
 
 let cachedHostPath = null;
 
-async function resolveHostPath(containerPath) {
+export async function resolveHostPath(containerPath) {
   if (cachedHostPath !== null) {
     return containerPath.replace(PROJECT_ROOT, cachedHostPath);
   }
@@ -266,6 +266,25 @@ export async function runAgentJobContainer({ containerName, repo, branch, agentJ
 }
 
 // ─── Container Operations ───
+
+export async function runClusterWorkerContainer({ containerName, codingAgent, env = [], binds = [], workingDir }) {
+  const agent = codingAgent || getConfig('CODING_AGENT') || 'claude-code';
+  const image = `ghostbot:coding-agent-${agent}`;
+
+  const { env: authEnv } = buildAgentAuthEnv(agent);
+  const fullEnv = ['RUNTIME=cluster-worker', ...authEnv, ...env];
+
+  return runContainer({
+    containerName,
+    image,
+    env: fullEnv,
+    workingDir,
+    hostConfig: {
+      AutoRemove: true,
+      ...(binds.length > 0 ? { Binds: binds } : {}),
+    },
+  });
+}
 
 export async function inspectContainer(containerName) {
   const { status, data } = await dockerApi('GET', `/containers/${encodeURIComponent(containerName)}/json`);

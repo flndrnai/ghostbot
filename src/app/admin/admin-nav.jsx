@@ -14,6 +14,7 @@ const tabs = [
   { href: '/admin/triggers', label: 'Triggers' },
   { href: '/admin/crons', label: 'Crons' },
   { href: '/admin/containers', label: 'Containers' },
+  { href: '/admin/monitoring', label: 'Monitoring' },
 ];
 
 export function AdminNav() {
