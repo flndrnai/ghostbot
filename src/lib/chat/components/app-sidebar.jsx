@@ -103,6 +103,18 @@ export function AppSidebar({ session }) {
             <SidebarUserNav session={session} />
           </SidebarMenuItem>
         </SidebarMenu>
+        {open && (
+          <a
+            href="https://flndrn.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground/50 hover:text-[#fbe731] transition-colors"
+          >
+            <span>{new Date().getFullYear()} by</span>
+            <img src="/flndrn-icon.svg" alt="flndrn" className="h-4 w-4" />
+            <span className="font-semibold" style={{ color: '#fbe731' }}>flndrn</span>
+          </a>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
