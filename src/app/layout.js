@@ -12,6 +12,9 @@ const sora = Sora({
 export const metadata = {
   title: 'GhostBot',
   description: 'Autonomous AI Coding Agent Platform',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export const viewport = {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Settings, Plus, Sparkles } from 'lucide-react';
+import { MessageSquare, Settings, Plus } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -16,10 +16,16 @@ import {
   useSidebar,
 } from './ui/sidebar.jsx';
 import { SidebarUserNav } from './sidebar-user-nav.jsx';
+import { SidebarHistory } from './sidebar-history.jsx';
 
 export function AppSidebar({ session }) {
   const router = useRouter();
-  const { open } = useSidebar();
+  const { open, isMobile, setOpenMobile } = useSidebar();
+
+  function handleNewChat() {
+    router.push('/');
+    if (isMobile) setOpenMobile(false);
+  }
 
   return (
     <Sidebar>
@@ -40,11 +46,11 @@ export function AppSidebar({ session }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* New Chat — prominent action */}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="New Chat"
+              onClick={handleNewChat}
               className="border border-dashed border-border/60 hover:border-primary/30 hover:bg-primary/5"
             >
               <Plus className="h-4 w-4 text-primary" />
@@ -53,19 +59,18 @@ export function AppSidebar({ session }) {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton isActive tooltip="Chat" onClick={() => router.push('/')}>
+              <SidebarMenuButton tooltip="Chat" onClick={() => { router.push('/'); if (isMobile) setOpenMobile(false); }}>
                 <MessageSquare className="h-4 w-4" />
                 {open && 'Chat'}
               </SidebarMenuButton>
             </SidebarMenuItem>
             {session?.user?.role === 'admin' && (
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Admin" onClick={() => router.push('/admin')}>
+                <SidebarMenuButton tooltip="Admin" onClick={() => { router.push('/admin'); if (isMobile) setOpenMobile(false); }}>
                   <Settings className="h-4 w-4" />
                   {open && 'Admin'}
                 </SidebarMenuButton>
@@ -74,21 +79,9 @@ export function AppSidebar({ session }) {
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Chat History */}
         <SidebarGroup>
           <SidebarGroupLabel>Recent</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              {open && (
-                <div className="flex flex-col items-center gap-2 py-8 text-center">
-                  <Sparkles className="h-5 w-5 text-muted-foreground/30" />
-                  <p className="text-xs text-muted-foreground/40 leading-relaxed px-2">
-                    Your conversations will appear here
-                  </p>
-                </div>
-              )}
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <SidebarHistory />
         </SidebarGroup>
       </SidebarContent>
 

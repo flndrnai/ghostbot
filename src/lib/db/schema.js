@@ -108,6 +108,19 @@ export const knowledgeEntries = sqliteTable('knowledge_entries', {
   createdAt: integer('created_at').notNull(),
 });
 
+// Token usage tracking
+export const tokenUsage = sqliteTable('token_usage', {
+  id: text('id').primaryKey(),
+  chatId: text('chat_id').notNull(),
+  messageId: text('message_id'),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  promptTokens: integer('prompt_tokens').notNull().default(0),
+  completionTokens: integer('completion_tokens').notNull().default(0),
+  totalTokens: integer('total_tokens').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+});
+
 // GhostBot-specific: Cross-chat context summaries
 export const chatSummaries = sqliteTable('chat_summaries', {
   id: text('id').primaryKey(),

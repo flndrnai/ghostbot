@@ -85,3 +85,42 @@ export function deleteConfigSecret(key) {
     .where(and(eq(settings.type, 'config_secret'), eq(settings.key, key)))
     .run();
 }
+
+// Custom OpenAI-compatible providers (stored encrypted)
+export function getCustomProvider(slug) {
+  const db = getDb();
+  const row = db
+    .select()
+    .from(settings)
+    .where(and(eq(settings.type, 'llm_provider'), eq(settings.key, slug)))
+    .get();
+
+  if (!row) return null;
+
+  try {
+    return JSON.parse(decrypt(row.value));
+  } catch {
+    return null;
+  }
+}
+
+export function setCustomProvider(slug, config, userId = null) {
+  const db = getDb();
+  const now = Date.now();
+
+  db.delete(settings)
+    .where(and(eq(settings.type, 'llm_provider'), eq(settings.key, slug)))
+    .run();
+
+  db.insert(settings)
+    .values({
+      id: crypto.randomUUID(),
+      type: 'llm_provider',
+      key: slug,
+      value: encrypt(JSON.stringify(config)),
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
+}

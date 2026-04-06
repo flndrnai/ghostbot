@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { initDatabase } from './db/index.js';
+import { warmConfigCache } from './config.js';
 
 export function registerNodeRuntime() {
   if (!process.env.AUTH_SECRET) {
@@ -8,5 +9,6 @@ export function registerNodeRuntime() {
   }
 
   initDatabase();
+  warmConfigCache();
   console.log('GhostBot initialized');
 }

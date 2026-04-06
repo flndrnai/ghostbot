@@ -17,7 +17,7 @@ function MobileHeader() {
   );
 }
 
-export function ChatPage({ session }) {
+export function ChatPage({ session, chatId, initialMessages }) {
   return (
     <ChatNavProvider>
       <SidebarProvider>
@@ -25,7 +25,7 @@ export function ChatPage({ session }) {
         <SidebarInset>
           <MobileHeader />
           <div className="flex flex-1 flex-col h-[100dvh] md:h-[calc(100vh-1px)]">
-            <Chat />
+            <Chat chatId={chatId} initialMessages={initialMessages} session={session} />
           </div>
         </SidebarInset>
       </SidebarProvider>

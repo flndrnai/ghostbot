@@ -8,6 +8,13 @@
       "when": 1775498482897,
       "tag": "0000_parallel_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1775500502675,
+      "tag": "0001_amazing_eternals",
+      "breakpoints": true
     }
   ]
 }
