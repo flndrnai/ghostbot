@@ -38,7 +38,7 @@ export function WorkspacePage({ workspace, session }) {
           <ArrowLeft className="h-4 w-4" />
         </a>
         <div className="flex items-center gap-2">
-          <img src="/icon.svg" alt="" className="h-5 w-5" />
+          <img src="/ghostbot-icon.svg" alt="" className="h-5 w-5" />
           <span className="text-sm font-semibold text-primary">{workspace.title || 'Workspace'}</span>
         </div>
         <span className="text-xs text-muted-foreground">{workspace.repo} ({workspace.branch})</span>

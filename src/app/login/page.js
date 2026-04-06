@@ -16,7 +16,7 @@ export default async function LoginPage() {
         {/* Brand */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center justify-center mb-4 animate-ghost-float">
-            <img src="/icon.svg" alt="GhostBot" className="h-16 w-16" />
+            <img src="/ghostbot-icon.svg" alt="GhostBot" className="h-16 w-16" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">GhostBot</h1>
           <p className="mt-2 text-sm text-muted-foreground">Autonomous AI Coding Agent</p>

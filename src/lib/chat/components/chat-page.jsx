@@ -10,7 +10,7 @@ function MobileHeader() {
     <div className="flex md:hidden items-center gap-3 border-b border-border/50 px-4 py-3 bg-background/80 backdrop-blur-sm safe-top">
       <SidebarTrigger />
       <div className="flex items-center gap-2">
-        <img src="/icon.svg" alt="" className="h-5 w-5" />
+        <img src="/ghostbot-icon.svg" alt="" className="h-5 w-5" />
         <span className="text-sm font-semibold tracking-tight text-primary">GhostBot</span>
       </div>
     </div>

@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }) {
         <div className="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img src="/icon.svg" alt="" className="h-5 w-5" />
+              <img src="/ghostbot-icon.svg" alt="" className="h-5 w-5" />
               <span className="text-sm font-semibold text-primary">GhostBot</span>
             </a>
             <span className="text-muted-foreground/30">/</span>

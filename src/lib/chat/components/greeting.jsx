@@ -6,7 +6,7 @@ export function Greeting() {
       {/* Ghost icon with float animation and glow */}
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-primary/10 blur-2xl scale-150 animate-glow-pulse" />
-        <img src="/icon.svg" alt="GhostBot" className="relative h-20 w-20 animate-ghost-float" />
+        <img src="/ghostbot-icon.svg" alt="GhostBot" className="relative h-20 w-20 animate-ghost-float" />
       </div>
 
       <div className="text-center max-w-sm stagger-children">

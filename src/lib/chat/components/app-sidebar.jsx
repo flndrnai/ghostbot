@@ -39,7 +39,7 @@ export function AppSidebar({ session }) {
         {open ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2.5">
-              <img src="/icon.svg" alt="" className="h-6 w-6" />
+              <img src="/ghostbot-icon.svg" alt="" className="h-6 w-6" />
               <span className="text-lg font-bold tracking-tight text-primary">GhostBot</span>
             </div>
             <SidebarTrigger />
