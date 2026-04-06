@@ -45,7 +45,7 @@ export function ChatInput(props) {
   const hasValue = input.trim().length > 0;
 
   return (
-    <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 py-4 sm:px-6 sm:py-5 safe-bottom">
+    <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 pt-4 pb-8 sm:px-6 sm:pt-5 sm:pb-10 safe-bottom">
       <div className="mx-auto max-w-3xl">
         <form onSubmit={handleSubmit}>
           <div className="relative">
@@ -85,7 +85,7 @@ export function ChatInput(props) {
             </button>
           </div>
         </form>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground/30">
+        <p className="mt-3 text-center text-xs text-foreground/80">
           GhostBot may make mistakes. Verify important information.
         </p>
       </div>
