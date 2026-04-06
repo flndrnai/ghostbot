@@ -49,18 +49,18 @@ const spring = { type: 'spring', stiffness: 400, damping: 17 };
  */
 function animated(Icon, hoverStyle = {}) {
   const AnimatedIcon = forwardRef(function AnimatedIcon(
-    { className, size, isHovered, ...props },
+    { className, size, isHovered, style, ...rest },
     ref,
   ) {
     return (
       <motion.span
         ref={ref}
         className="inline-flex items-center justify-center"
+        style={style}
         initial={false}
         animate={isHovered ? hoverStyle : { x: 0, y: 0, scale: 1, rotate: 0 }}
         whileHover={isHovered === undefined ? hoverStyle : undefined}
         transition={spring}
-        {...props}
       >
         <Icon className={className} size={size} />
       </motion.span>
@@ -97,14 +97,14 @@ export const X = animated(XBase, { rotate: 90 });
 export const XCircle = animated(XCircleBase, { scale: 1.1 });
 
 // Loader with continuous spin (always animates)
-export const Loader2 = forwardRef(function Loader2({ className, size, ...props }, ref) {
+export const Loader2 = forwardRef(function Loader2({ className, size, style }, ref) {
   return (
     <motion.span
       ref={ref}
       animate={{ rotate: 360 }}
       transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
       className="inline-flex items-center justify-center"
-      {...props}
+      style={style}
     >
       <Loader2Base className={className} size={size} />
     </motion.span>

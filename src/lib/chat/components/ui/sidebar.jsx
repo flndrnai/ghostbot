@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, Children, cloneElement, isValidElement } from 'react';
 import { cn } from '../../../utils.js';
 import { Sheet } from './sheet.jsx';
 
@@ -128,15 +128,12 @@ export function SidebarMenuButton({ children, isActive, className, tooltip, onCl
   const [hovered, setHovered] = useState(false);
 
   // Clone children to pass isHovered prop to animated icons
-  const enhancedChildren = Array.isArray(children)
-    ? children.map((child, i) =>
-        child?.type?.displayName?.endsWith('Animated')
-          ? { ...child, props: { ...child.props, isHovered: hovered, key: i } }
-          : child,
-      )
-    : children?.type?.displayName?.endsWith('Animated')
-      ? { ...children, props: { ...children.props, isHovered: hovered } }
-      : children;
+  const enhancedChildren = Children.map(children, (child) => {
+    if (isValidElement(child) && child.type?.displayName?.endsWith('Animated')) {
+      return cloneElement(child, { isHovered: hovered });
+    }
+    return child;
+  });
 
   return (
     <button
