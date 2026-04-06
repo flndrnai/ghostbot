@@ -127,7 +127,32 @@ API Key: any value (Ollama doesn't validate)
 Model: qwen2.5:32b (or any installed model)
 ```
 
-The admin UI will have a dedicated Ollama page with auto-model detection, connection testing, and one-click switching between cloud and self-hosted providers.
+The admin UI has a dedicated Ollama page with auto-model detection, connection testing, and one-click switching between cloud and self-hosted providers.
+
+## Optional Features & Requirements
+
+Some features are optional and require additional setup:
+
+| Feature | Requirement | Why |
+|---------|------------|-----|
+| **Web Chat** | None | Works out of the box on localhost |
+| **Ollama** | VPS with GPU | Self-hosted LLM, no API costs |
+| **Cloud LLM** | API key (Anthropic/OpenAI/Google) | Pay-per-token, no hardware needed |
+| **Docker Agents** | Docker Desktop or Docker Engine | Required for coding agents to run |
+| **Telegram Bot** | Public domain with HTTPS | Telegram needs a public URL to send webhook messages to your GhostBot instance |
+| **GitHub Integration** | GitHub PAT (Personal Access Token) | Required for creating branches, commits, and PRs |
+| **Agent Jobs** | Docker + GitHub PAT | Autonomous coding tasks that create PRs |
+
+### About the Telegram requirement
+
+To use the Telegram bot feature, you need a **public domain name with HTTPS** (e.g., `https://ghostbot.yourdomain.com`). This is because Telegram sends messages to your server via webhooks — it POSTs to `https://yourdomain.com/api/telegram/webhook` whenever someone messages your bot. Localhost won't work.
+
+**Options for getting a public URL:**
+- **Own domain** (~$10/year) pointed to your VPS + free HTTPS via Let's Encrypt
+- **Cloudflare Tunnel** (free) — exposes your local server to a public URL
+- **ngrok** (free tier) — temporary public URL for testing
+
+If you don't need Telegram, you can skip this entirely. The web chat works perfectly without it.
 
 ## License
 
