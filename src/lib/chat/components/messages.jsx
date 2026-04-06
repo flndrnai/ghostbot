@@ -4,7 +4,7 @@ import { useRef, useEffect } from 'react';
 import { Greeting } from './greeting.jsx';
 import { ThinkingMessage } from './thinking-message.jsx';
 
-export function Messages({ messages = [], isLoading = false }) {
+export function Messages({ messages = [], isLoading = false, onSuggestion }) {
   const endRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -16,7 +16,7 @@ export function Messages({ messages = [], isLoading = false }) {
   }, [messages, isLoading]);
 
   if (messages.length === 0 && !isLoading) {
-    return <Greeting />;
+    return <Greeting onSuggestion={onSuggestion} />;
   }
 
   return (

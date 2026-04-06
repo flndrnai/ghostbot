@@ -3,7 +3,12 @@
 import { useRef, useEffect } from 'react';
 import { ArrowUp, Square } from '../../icons/index.jsx';
 
-export function ChatInput({ input = '', onInputChange, onSend, isLoading = false }) {
+export function ChatInput(props) {
+  const input = props.input || '';
+  const onInputChange = props.onInputChange;
+  const onSend = props.onSend;
+  const isLoading = props.isLoading || false;
+
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -16,20 +21,28 @@ export function ChatInput({ input = '', onInputChange, onSend, isLoading = false
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (typeof onSend === 'function') onSend();
+      if (typeof onSend === 'function') {
+        onSend();
+      } else {
+        console.error('[ChatInput] onSend is not a function:', typeof onSend);
+      }
     }
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (typeof onSend === 'function') onSend();
+    if (typeof onSend === 'function') {
+      onSend();
+    }
   }
 
   function handleChange(e) {
-    if (typeof onInputChange === 'function') onInputChange(e.target.value);
+    if (typeof onInputChange === 'function') {
+      onInputChange(e.target.value);
+    }
   }
 
-  const hasValue = input?.trim().length > 0;
+  const hasValue = input.trim().length > 0;
 
   return (
     <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 py-4 sm:px-6 sm:py-5 safe-bottom">
@@ -56,7 +69,7 @@ export function ChatInput({ input = '', onInputChange, onSend, isLoading = false
             />
             <button
               type="submit"
-              disabled={!hasValue && !isLoading}
+              disabled={!hasValue || isLoading}
               className={`
                 absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center
                 rounded-xl transition-all duration-200 cursor-pointer
