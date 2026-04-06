@@ -10,7 +10,8 @@ export async function createModel(overrides = {}) {
 
   // Ollama — use OpenAI-compatible API
   if (provider === 'ollama') {
-    const baseURL = getConfig('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const rawUrl = getConfig('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const baseURL = rawUrl.replace(/\/+$/, ''); // strip trailing slashes
     const { ChatOpenAI } = await import('@langchain/openai');
     return new ChatOpenAI({
       modelName: model || 'llama3.2',

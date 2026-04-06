@@ -66,7 +66,9 @@ export async function testLLMConnection() {
 
 export async function saveOllamaUrl(url) {
   await requireAdmin();
-  setConfig('OLLAMA_BASE_URL', url);
+  // Strip trailing slashes to prevent double-slash issues
+  const cleanUrl = (url || '').replace(/\/+$/, '');
+  setConfig('OLLAMA_BASE_URL', cleanUrl);
   invalidateConfigCache();
   resetAgent();
   return { success: true };
@@ -75,7 +77,8 @@ export async function saveOllamaUrl(url) {
 export async function testOllamaConnection(url) {
   await requireAdmin();
   try {
-    const response = await fetch(`${url}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    const cleanUrl = (url || '').replace(/\/+$/, '');
+    const response = await fetch(`${cleanUrl}/api/tags`, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     const models = (data.models || []).map((m) => ({
