@@ -3,7 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { ArrowUp, Square } from '../../icons/index.jsx';
 
-export function ChatInput({ input, onInputChange, onSend, isLoading }) {
+export function ChatInput({ input = '', onInputChange, onSend, isLoading = false }) {
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -16,13 +16,17 @@ export function ChatInput({ input, onInputChange, onSend, isLoading }) {
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (typeof onSend === 'function') onSend();
     }
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    onSend();
+    if (typeof onSend === 'function') onSend();
+  }
+
+  function handleChange(e) {
+    if (typeof onInputChange === 'function') onInputChange(e.target.value);
   }
 
   const hasValue = input?.trim().length > 0;
@@ -35,7 +39,7 @@ export function ChatInput({ input, onInputChange, onSend, isLoading }) {
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => onInputChange(e.target.value)}
+              onChange={handleChange}
               onKeyDown={handleKeyDown}
               placeholder="Send a message..."
               rows={1}
