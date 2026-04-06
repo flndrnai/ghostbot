@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, Children, cloneElement, isValidElement } from 'react';
 import { cn } from '../../../utils.js';
 
 const variants = {
@@ -14,9 +17,21 @@ const sizes = {
   icon: 'h-12 w-12',
 };
 
-export function Button({ className, variant = 'default', size = 'default', ...props }) {
+export function Button({ className, variant = 'default', size = 'default', children, ...props }) {
+  const [hovered, setHovered] = useState(false);
+
+  // Pass isHovered to animated icon children so they animate on button hover
+  const enhancedChildren = Children.map(children, (child) => {
+    if (isValidElement(child) && child.type?.displayName?.endsWith('Animated')) {
+      return cloneElement(child, { isHovered: hovered });
+    }
+    return child;
+  });
+
   return (
     <button
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className={cn(
         'inline-flex items-center justify-center rounded-xl font-medium',
         'transition-all duration-200 ease-out',
@@ -28,6 +43,8 @@ export function Button({ className, variant = 'default', size = 'default', ...pr
         className,
       )}
       {...props}
-    />
+    >
+      {enhancedChildren}
+    </button>
   );
 }

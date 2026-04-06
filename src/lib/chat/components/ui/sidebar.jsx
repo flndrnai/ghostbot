@@ -125,10 +125,24 @@ export function SidebarMenuItem({ className, ...props }) {
 
 export function SidebarMenuButton({ children, isActive, className, tooltip, onClick, ...props }) {
   const { open } = useSidebar();
+  const [hovered, setHovered] = useState(false);
+
+  // Clone children to pass isHovered prop to animated icons
+  const enhancedChildren = Array.isArray(children)
+    ? children.map((child, i) =>
+        child?.type?.displayName?.endsWith('Animated')
+          ? { ...child, props: { ...child.props, isHovered: hovered, key: i } }
+          : child,
+      )
+    : children?.type?.displayName?.endsWith('Animated')
+      ? { ...children, props: { ...children.props, isHovered: hovered } }
+      : children;
 
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className={cn(
         'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
         'hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
@@ -140,7 +154,7 @@ export function SidebarMenuButton({ children, isActive, className, tooltip, onCl
       title={!open ? tooltip : undefined}
       {...props}
     >
-      {children}
+      {enhancedChildren}
     </button>
   );
 }

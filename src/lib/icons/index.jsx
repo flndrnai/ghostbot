@@ -30,72 +30,87 @@ import {
 } from 'lucide-react';
 import { forwardRef } from 'react';
 
-// Wrap a lucide icon with motion hover animation
-function animated(Icon, hoverAnimation = {}) {
-  const AnimatedIcon = forwardRef(function AnimatedIcon({ className, size, ...props }, ref) {
+const spring = { type: 'spring', stiffness: 400, damping: 17 };
+
+/**
+ * Creates an animated icon component.
+ *
+ * Supports TWO hover modes:
+ * 1. Direct hover on the icon itself (default)
+ * 2. Parent-controlled via `isHovered` prop — when you want the BUTTON hover
+ *    to trigger the icon animation, pass isHovered from the parent's state.
+ *
+ * Example (parent-controlled):
+ *   const [hovered, setHovered] = useState(false);
+ *   <button onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+ *     <Plus className="h-4 w-4" isHovered={hovered} />
+ *     New Chat
+ *   </button>
+ */
+function animated(Icon, hoverStyle = {}) {
+  const AnimatedIcon = forwardRef(function AnimatedIcon(
+    { className, size, isHovered, ...props },
+    ref,
+  ) {
     return (
-      <motion.div
+      <motion.span
         ref={ref}
-        whileHover={hoverAnimation}
-        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-        className="inline-flex"
+        className="inline-flex items-center justify-center"
+        initial={false}
+        animate={isHovered ? hoverStyle : { x: 0, y: 0, scale: 1, rotate: 0 }}
+        whileHover={isHovered === undefined ? hoverStyle : undefined}
+        transition={spring}
         {...props}
       >
         <Icon className={className} size={size} />
-      </motion.div>
+      </motion.span>
     );
   });
-  AnimatedIcon.displayName = Icon.displayName || 'AnimatedIcon';
+  AnimatedIcon.displayName = (Icon.displayName || Icon.name || 'Icon') + 'Animated';
   return AnimatedIcon;
 }
 
-// Tap scale animation (for buttons)
-const tap = { scale: 0.92 };
-const hover = { scale: 1.1 };
-const rotate = { rotate: 90 };
-const spin = { rotate: 180 };
-
-// Navigation & Action icons — with hover animations
+// Navigation & Action icons
 export const ArrowUp = animated(ArrowUpBase, { y: -2 });
-export const ArrowLeft = animated(ArrowLeftBase, { x: -2 });
-export const Check = animated(CheckBase, { scale: 1.2 });
+export const ArrowLeft = animated(ArrowLeftBase, { x: -3 });
+export const Check = animated(CheckBase, { scale: 1.15 });
 export const CheckCircle = animated(CheckCircleBase, { scale: 1.1 });
-export const ChevronDown = animated(ChevronDownBase, { y: 1 });
-export const ChevronRight = animated(ChevronRightBase, { x: 1 });
-export const Clock = animated(ClockBase, hover);
-export const Eye = animated(EyeBase, hover);
-export const EyeOff = animated(EyeOffBase, hover);
-export const LogOut = animated(LogOutBase, { x: 2 });
-export const MessageSquare = animated(MessageSquareBase, hover);
-export const Moon = animated(MoonBase, { rotate: -15 });
-export const Pencil = animated(PencilBase, { rotate: -12 });
+export const ChevronDown = animated(ChevronDownBase, { y: 2 });
+export const ChevronRight = animated(ChevronRightBase, { x: 2 });
+export const Clock = animated(ClockBase, { scale: 1.1 });
+export const Eye = animated(EyeBase, { scale: 1.1 });
+export const EyeOff = animated(EyeOffBase, { scale: 1.1 });
+export const LogOut = animated(LogOutBase, { x: 3 });
+export const MessageSquare = animated(MessageSquareBase, { scale: 1.1 });
+export const Moon = animated(MoonBase, { rotate: -20 });
+export const Pencil = animated(PencilBase, { rotate: -15 });
 export const Plus = animated(PlusBase, { rotate: 90 });
-export const RefreshCw = animated(RefreshCwBase, spin);
-export const Settings = animated(SettingsBase, { rotate: 45 });
-export const Square = animated(SquareBase, tap);
-export const Star = animated(StarBase, { scale: 1.2 });
-export const Sun = animated(SunBase, { rotate: 30 });
-export const Timer = animated(TimerBase, hover);
-export const Trash2 = animated(Trash2Base, { y: 1 });
-export const Wrench = animated(WrenchBase, { rotate: -15 });
+export const RefreshCw = animated(RefreshCwBase, { rotate: 180 });
+export const Settings = animated(SettingsBase, { rotate: 60 });
+export const Square = animated(SquareBase, { scale: 0.9 });
+export const Star = animated(StarBase, { scale: 1.2, rotate: 15 });
+export const Sun = animated(SunBase, { rotate: 45 });
+export const Timer = animated(TimerBase, { scale: 1.1 });
+export const Trash2 = animated(Trash2Base, { y: 2 });
+export const Wrench = animated(WrenchBase, { rotate: -20 });
 export const X = animated(XBase, { rotate: 90 });
-export const XCircle = animated(XCircleBase, hover);
+export const XCircle = animated(XCircleBase, { scale: 1.1 });
 
-// Loader with continuous spin
+// Loader with continuous spin (always animates)
 export const Loader2 = forwardRef(function Loader2({ className, size, ...props }, ref) {
   return (
-    <motion.div
+    <motion.span
       ref={ref}
       animate={{ rotate: 360 }}
       transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-      className="inline-flex"
+      className="inline-flex items-center justify-center"
       {...props}
     >
       <Loader2Base className={className} size={size} />
-    </motion.div>
+    </motion.span>
   );
 });
 Loader2.displayName = 'Loader2';
 
-// Re-export brand/special icons directly from lucide-react (no animation needed)
+// Re-export brand/special icons directly from lucide-react
 export { Bot, Box, Cpu, Github, HardDrive, Webhook, Zap, Sparkles } from 'lucide-react';
