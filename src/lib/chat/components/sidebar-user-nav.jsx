@@ -36,7 +36,12 @@ export function SidebarUserNav({ session }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={async () => {
+            try {
+              await signOut({ redirect: false });
+            } catch {}
+            window.location.href = '/login';
+          }}
           className="text-destructive hover:text-destructive"
         >
           <LogOut className="h-4 w-4" />
