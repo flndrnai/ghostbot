@@ -28,7 +28,7 @@ export async function createModel(overrides = {}) {
     if (!apiKey) throw new Error('Anthropic API key not configured. Go to Admin > LLM Providers.');
     const { ChatAnthropic } = await import('@langchain/anthropic');
     return new ChatAnthropic({
-      modelName: model,
+      model,
       maxTokens,
       temperature,
       streaming: true,

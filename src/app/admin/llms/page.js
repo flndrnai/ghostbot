@@ -13,13 +13,12 @@ import {
   testLLMConnection,
   getSettings,
 } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from '../../../lib/icons/index.jsx';
+import { CheckCircle, XCircle, Loader2 } from '../../../lib/icons/index.jsx';
 
 export default function LLMsPage() {
   const [provider, setProvider] = useState('ollama');
   const [model, setModel] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
   const [keyConfigured, setKeyConfigured] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -140,22 +139,12 @@ export default function LLMsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>{providerDef.credentials[0].label}</Label>
-              <div className="relative">
-                <Input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={keyConfigured ? '••••••••••••••••' : 'sk-...'}
-                  className="pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={keyConfigured ? '••••••••••••••••' : 'sk-...'}
+              />
             </div>
             <Button onClick={handleSaveKey} disabled={!apiKey.trim()}>Save Key</Button>
           </CardContent>

@@ -21,7 +21,7 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <div className="max-w-4xl mx-auto px-6 flex gap-1 overflow-x-auto">
+    <div className="w-full max-w-6xl mx-auto px-6 flex gap-1 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
       {tabs.map((tab) => (
         <Link
           key={tab.href}

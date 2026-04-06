@@ -40,12 +40,18 @@ export async function testLLMConnection() {
   await requireAdmin();
   try {
     const { createModel } = await import('../ai/model.js');
+    const { HumanMessage } = await import('@langchain/core/messages');
     const model = await createModel({ maxTokens: 50 });
-    const response = await model.invoke([{ role: 'user', content: 'Say "hello" in one word.' }]);
+    const response = await model.invoke([new HumanMessage('Say "hello" in one word.')]);
     const text = typeof response.content === 'string' ? response.content : 'OK';
     return { success: true, response: text.slice(0, 200) };
   } catch (error) {
-    return { success: false, error: error.message };
+    let msg = error.message || 'Unknown error';
+    if (error.cause) msg += ` (${error.cause.message || error.cause})`;
+    if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
+      msg = 'Cannot connect to LLM API. Check your network connection and API key.';
+    }
+    return { success: false, error: msg };
   }
 }
 

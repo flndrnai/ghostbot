@@ -6,11 +6,10 @@ import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { saveGitHubConfig, testGitHubConnection } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, XCircle, Loader2, Github } from '../../../lib/icons/index.jsx';
+import { CheckCircle, XCircle, Loader2, Github } from '../../../lib/icons/index.jsx';
 
 export default function GitHubPage() {
   const [token, setToken] = useState('');
-  const [showToken, setShowToken] = useState(false);
   const [owner, setOwner] = useState('');
   const [repo, setRepo] = useState('');
   const [testing, setTesting] = useState(false);
@@ -50,22 +49,12 @@ export default function GitHubPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>GitHub PAT</Label>
-            <div className="relative">
-              <Input
-                type={showToken ? 'text' : 'password'}
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="ghp_..."
-                className="pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken(!showToken)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <Input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="ghp_..."
+            />
           </div>
         </CardContent>
       </Card>

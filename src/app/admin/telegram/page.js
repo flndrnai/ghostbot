@@ -6,11 +6,10 @@ import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { saveTelegramConfig, getTelegramStatus } from '../../../lib/admin/actions.js';
-import { Eye, EyeOff, CheckCircle, Loader2, MessageSquare } from '../../../lib/icons/index.jsx';
+import { CheckCircle, Loader2, MessageSquare } from '../../../lib/icons/index.jsx';
 
 export default function TelegramPage() {
   const [botToken, setBotToken] = useState('');
-  const [showToken, setShowToken] = useState(false);
   const [chatId, setChatId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -64,22 +63,12 @@ export default function TelegramPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Bot Token</Label>
-            <div className="relative">
-              <Input
-                type={showToken ? 'text' : 'password'}
-                value={botToken}
-                onChange={(e) => setBotToken(e.target.value)}
-                placeholder="123456:ABC-DEF..."
-                className="pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken(!showToken)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <Input
+              type="password"
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              placeholder="123456:ABC-DEF..."
+            />
           </div>
           <div className="space-y-2">
             <Label>Chat ID (optional)</Label>

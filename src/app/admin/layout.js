@@ -7,9 +7,9 @@ export default async function AdminLayout({ children }) {
   if (!session || session.user?.role !== 'admin') redirect('/');
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <img src="/icon.svg" alt="" className="h-5 w-5" />
@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }) {
         </div>
         <AdminNav />
       </div>
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="w-full max-w-6xl mx-auto px-6 py-8">
         {children}
       </div>
     </div>
