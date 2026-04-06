@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import { initDatabase } from './db/index.js';
 import { warmConfigCache } from './config.js';
+import { loadCrons } from './cron.js';
+import { loadTriggers } from './triggers.js';
 
 export function registerNodeRuntime() {
   if (!process.env.AUTH_SECRET) {
@@ -10,5 +12,7 @@ export function registerNodeRuntime() {
 
   initDatabase();
   warmConfigCache();
+  loadTriggers();
+  loadCrons();
   console.log('GhostBot initialized');
 }

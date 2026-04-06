@@ -6,10 +6,13 @@ import { cn } from '../../lib/utils.js';
 
 const tabs = [
   { href: '/admin/llms', label: 'LLM Providers' },
-  { href: '/admin/ollama', label: 'Ollama Setup' },
-  { href: '/admin/chat', label: 'Chat Settings' },
+  { href: '/admin/ollama', label: 'Ollama' },
+  { href: '/admin/chat', label: 'Chat' },
   { href: '/admin/agents', label: 'Agents' },
   { href: '/admin/github', label: 'GitHub' },
+  { href: '/admin/telegram', label: 'Telegram' },
+  { href: '/admin/triggers', label: 'Triggers' },
+  { href: '/admin/crons', label: 'Crons' },
   { href: '/admin/containers', label: 'Containers' },
 ];
 

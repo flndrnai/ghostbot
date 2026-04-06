@@ -24,6 +24,9 @@ const SECRET_KEYS = new Set([
   'XAI_API_KEY',
   'MOONSHOT_API_KEY',
   'OPENROUTER_API_KEY',
+  'TELEGRAM_BOT_TOKEN',
+  'TELEGRAM_WEBHOOK_SECRET',
+  'GITHUB_WEBHOOK_SECRET',
 ]);
 
 // Cache survives Next.js HMR/webpack chunking

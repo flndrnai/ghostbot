@@ -105,6 +105,20 @@ export async function testGitHubConnection() {
   }
 }
 
+export async function saveTelegramConfig({ botToken, chatId, webhookSecret }) {
+  await requireAdmin();
+  if (botToken?.trim()) {
+    setConfigSecret('TELEGRAM_BOT_TOKEN', botToken.trim());
+    invalidateConfigCache('TELEGRAM_BOT_TOKEN');
+  }
+  if (chatId !== undefined) setConfig('TELEGRAM_CHAT_ID', chatId.trim());
+  if (webhookSecret) {
+    setConfigSecret('TELEGRAM_WEBHOOK_SECRET', webhookSecret);
+    invalidateConfigCache('TELEGRAM_WEBHOOK_SECRET');
+  }
+  return { success: true };
+}
+
 export async function getSettings() {
   await requireAdmin();
   return {
