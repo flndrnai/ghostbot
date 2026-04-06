@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=ghostbot:coding-agent-base
+FROM ${BASE_IMAGE}
+
+USER root
+RUN npm install -g @anthropic-ai/claude-code
+USER coding-agent
+
+ENV AGENT=claude-code

@@ -1,0 +1,10 @@
+ARG BASE_IMAGE=ghostbot:coding-agent-base
+FROM ${BASE_IMAGE}
+
+USER root
+# Bun runtime (required for OpenCode plugins)
+RUN curl -fsSL https://bun.sh/install | bash && ln -s /root/.bun/bin/bun /usr/local/bin/bun
+RUN npm install -g opencode
+USER coding-agent
+
+ENV AGENT=opencode
