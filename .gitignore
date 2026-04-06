@@ -1,0 +1,46 @@
+# Reference source (read-only, do not push)
+thepopebot-main/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Database
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-volumes/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Claude Code
+.claude/
