@@ -15,6 +15,15 @@ const SECRET_KEYS = new Set([
   'ANTHROPIC_API_KEY',
   'OPENAI_API_KEY',
   'GOOGLE_API_KEY',
+  'GH_TOKEN',
+  'CLAUDE_CODE_OAUTH_TOKEN',
+  'CODEX_OAUTH_TOKEN',
+  'DEEPSEEK_API_KEY',
+  'MINIMAX_API_KEY',
+  'MISTRAL_API_KEY',
+  'XAI_API_KEY',
+  'MOONSHOT_API_KEY',
+  'OPENROUTER_API_KEY',
 ]);
 
 // Cache survives Next.js HMR/webpack chunking

@@ -8,6 +8,9 @@ const tabs = [
   { href: '/admin/llms', label: 'LLM Providers' },
   { href: '/admin/ollama', label: 'Ollama Setup' },
   { href: '/admin/chat', label: 'Chat Settings' },
+  { href: '/admin/agents', label: 'Agents' },
+  { href: '/admin/github', label: 'GitHub' },
+  { href: '/admin/containers', label: 'Containers' },
 ];
 
 export function AdminNav() {

@@ -3,14 +3,13 @@ import fs from 'fs';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { createModel } from './model.js';
+import { codingAgentTool, agentJobTool } from './tools.js';
 import { PROJECT_ROOT } from '../paths.js';
 
 let agentPromise = null;
 
 export async function getAgent() {
   if (globalThis.__ghostbotAgent) return globalThis.__ghostbotAgent;
-
-  // Avoid concurrent initialization
   if (agentPromise) return agentPromise;
 
   agentPromise = (async () => {
@@ -26,7 +25,7 @@ export async function getAgent() {
 
     const agent = createReactAgent({
       llm,
-      tools: [],
+      tools: [codingAgentTool, agentJobTool],
       checkpointSaver: checkpointer,
     });
 
