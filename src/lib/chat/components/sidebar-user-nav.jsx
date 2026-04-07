@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { LogOut, Moon, Sun } from '../../icons/index.jsx';
+import { LogOut, Moon, Sun, BookOpen } from '../../icons/index.jsx';
 import { useSidebar, SidebarMenuButton } from './ui/sidebar.jsx';
 import {
   DropdownMenu,
@@ -30,6 +30,10 @@ export function SidebarUserNav({ session }) {
         </SidebarMenuButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="min-w-[180px]">
+        <DropdownMenuItem onClick={() => { window.location.href = '/docs'; }}>
+          <BookOpen className="h-4 w-4" />
+          Docs
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}

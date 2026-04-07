@@ -3,6 +3,7 @@
 import { motion } from 'motion/react';
 import {
   ArrowUp as ArrowUpBase,
+  BookOpen as BookOpenBase,
   ArrowLeft as ArrowLeftBase,
   Check as CheckBase,
   CheckCircle as CheckCircleBase,
@@ -72,6 +73,7 @@ function animated(Icon, hoverStyle = {}) {
 
 // Navigation & Action icons
 export const ArrowUp = animated(ArrowUpBase, { y: -2 });
+export const BookOpen = animated(BookOpenBase, { rotate: -8 });
 export const ArrowLeft = animated(ArrowLeftBase, { x: -3 });
 export const Check = animated(CheckBase, { scale: 1.15 });
 export const CheckCircle = animated(CheckCircleBase, { scale: 1.1 });
