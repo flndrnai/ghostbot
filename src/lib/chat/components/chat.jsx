@@ -5,17 +5,23 @@ import { Messages } from './messages.jsx';
 import { ChatInput } from './chat-input.jsx';
 import { useChatNav } from './chat-nav-context.jsx';
 
+function sanitizeMessages(arr) {
+  return (Array.isArray(arr) ? arr : []).filter(
+    (m) => m && typeof m === 'object' && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
+  );
+}
+
 export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
   const { triggerRefresh } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
   const [localInput, setLocalInput] = useState('');
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(() => sanitizeMessages(initialMessages));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Sync initial messages when chat ID changes
   useEffect(() => {
-    setMessages(initialMessages);
+    setMessages(sanitizeMessages(initialMessages));
     chatIdRef.current = initialChatId || null;
   }, [initialChatId, initialMessages]);
 

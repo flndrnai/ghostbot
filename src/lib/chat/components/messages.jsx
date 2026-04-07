@@ -8,21 +8,26 @@ export function Messages({ messages = [], isLoading = false, onSuggestion }) {
   const endRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Defensive: filter out null/undefined/malformed entries
+  const safeMessages = (Array.isArray(messages) ? messages : []).filter(
+    (m) => m && typeof m === 'object' && (m.role === 'user' || m.role === 'assistant'),
+  );
+
   // Auto-scroll when new content arrives
   useEffect(() => {
     if (endRef.current) {
       endRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isLoading]);
+  }, [safeMessages.length, isLoading]);
 
-  if (messages.length === 0 && !isLoading) {
+  if (safeMessages.length === 0 && !isLoading) {
     return <Greeting onSuggestion={onSuggestion} />;
   }
 
   return (
     <div ref={containerRef} className="flex flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-6">
       <div className="mx-auto w-full max-w-3xl space-y-6">
-        {messages.map((msg) => (
+        {safeMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -38,7 +43,7 @@ export function Messages({ messages = [], isLoading = false, onSuggestion }) {
             </div>
           </div>
         ))}
-        {isLoading && messages[messages.length - 1]?.role === 'user' && (
+        {isLoading && safeMessages[safeMessages.length - 1]?.role === 'user' && (
           <ThinkingMessage />
         )}
         <div ref={endRef} />

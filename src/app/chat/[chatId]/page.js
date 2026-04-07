@@ -4,19 +4,16 @@ import { getChatById, getMessagesByChatId } from '../../../lib/db/chats.js';
 import { ChatPage } from '../../../lib/chat/components/chat-page.jsx';
 
 function formatMessagesForClient(dbMessages) {
-  const uiMessages = [];
-
-  for (const msg of dbMessages) {
-    uiMessages.push({
-      id: msg.id,
+  if (!Array.isArray(dbMessages)) return [];
+  return dbMessages
+    .filter((msg) => msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string')
+    .map((msg) => ({
+      id: String(msg.id),
       role: msg.role,
       content: msg.content,
       parts: [{ type: 'text', text: msg.content }],
-      createdAt: new Date(msg.createdAt),
-    });
-  }
-
-  return uiMessages;
+      createdAt: typeof msg.createdAt === 'number' ? msg.createdAt : Date.now(),
+    }));
 }
 
 export default async function ChatIdPage({ params }) {
