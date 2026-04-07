@@ -65,15 +65,12 @@ export OPENAI_API_KEY
 export OPENCODE_MODEL="${MODEL}"
 
 log "running OpenCode in headless mode..."
-# Headless mode: feed the prompt via stdin, no TUI.
-# OpenCode picks up OPENAI_BASE_URL / OPENAI_API_KEY / OPENCODE_MODEL automatically.
-echo "${PROMPT}" | opencode run \
-  --model "${MODEL}" \
-  --provider openai \
-  --no-color \
-  || {
-    log "OpenCode exited non-zero — capturing diff anyway"
-  }
+# OpenCode 'run' takes the prompt as a positional arg and uses
+# provider/model format for -m. We pass openai/<model> so it
+# routes through the OPENAI_BASE_URL we set above (Ollama).
+opencode run -m "openai/${MODEL}" "${PROMPT}" || {
+  log "OpenCode exited non-zero — capturing diff anyway"
+}
 
 # ============================================================
 # 3. Stage + commit any changes
