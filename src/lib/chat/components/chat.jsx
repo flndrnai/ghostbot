@@ -29,9 +29,11 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
 
       // Add user message immediately
       const userMessage = {
-        id: `user-${Date.now()}`,
+        id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         role: 'user',
         content: message,
+        parts: [{ type: 'text', text: message }],
+        createdAt: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
@@ -65,9 +67,11 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         const decoder = new TextDecoder();
         let assistantContent = '';
         const assistantMessage = {
-          id: `assistant-${Date.now()}`,
+          id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: 'assistant',
           content: '',
+          parts: [{ type: 'text', text: '' }],
+          createdAt: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
 
@@ -97,8 +101,12 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
-                  if (last.role === 'assistant') {
-                    updated[updated.length - 1] = { ...last, content: assistantContent };
+                  if (last && last.role === 'assistant') {
+                    updated[updated.length - 1] = {
+                      ...last,
+                      content: assistantContent,
+                      parts: [{ type: 'text', text: assistantContent }],
+                    };
                   }
                   return updated;
                 });

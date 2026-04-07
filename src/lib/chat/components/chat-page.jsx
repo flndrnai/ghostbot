@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from './ui/
 import { ChatNavProvider } from './chat-nav-context.jsx';
 import { AppSidebar } from './app-sidebar.jsx';
 import { Chat } from './chat.jsx';
+import { ChatErrorBoundary } from './error-boundary.jsx';
 
 function MobileHeader() {
   return (
@@ -25,7 +26,9 @@ export function ChatPage({ session, chatId, initialMessages }) {
         <SidebarInset>
           <MobileHeader />
           <div className="flex flex-1 flex-col h-[100dvh] md:h-[calc(100vh-1px)]">
-            <Chat chatId={chatId} initialMessages={initialMessages} session={session} />
+            <ChatErrorBoundary>
+              <Chat chatId={chatId} initialMessages={initialMessages} session={session} />
+            </ChatErrorBoundary>
           </div>
         </SidebarInset>
       </SidebarProvider>
