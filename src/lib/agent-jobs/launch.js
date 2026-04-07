@@ -57,21 +57,24 @@ export async function launchAgentJob({
     branch,
   });
 
+  // Base env shared by every agent
+  const baseEnv = [
+    `GH_TOKEN=${ghToken}`,
+    `GH_REPO=${repo}`,
+    `GH_BRANCH=${branch}`,
+    `BASE_BRANCH=${baseBranch}`,
+    `PROMPT=${prompt}`,
+  ];
+
+  // Agent-specific env
+  const extraEnv = buildAgentEnv(agent, { ollamaBaseUrl, model });
+
   // Kick off the container in the background; don't await
   runJobContainer({
     jobId,
     containerName,
     image,
-    env: [
-      `GH_TOKEN=${ghToken}`,
-      `GH_REPO=${repo}`,
-      `GH_BRANCH=${branch}`,
-      `BASE_BRANCH=${baseBranch}`,
-      `PROMPT=${prompt}`,
-      `OLLAMA_BASE_URL=${ollamaBaseUrl}`,
-      `OPENAI_API_KEY=ollama`,
-      `MODEL=${model}`,
-    ],
+    env: [...baseEnv, ...extraEnv],
   }).catch((err) => {
     console.error('[agent-job] background runner crashed:', err);
     updateAgentJob(jobId, {
@@ -83,6 +86,51 @@ export async function launchAgentJob({
   });
 
   return jobId;
+}
+
+// Per-agent environment builder.
+// Each coding agent has its own conventions for LLM routing:
+//   - aider    : OLLAMA_BASE_URL (no /v1) + OPENAI_API_KEY (any)  via LiteLLM
+//   - opencode : OPENAI_BASE_URL (with /v1) + OPENAI_API_KEY      via ai-sdk
+//   - codex    : OPENAI_API_KEY (+ optional OPENAI_BASE_URL)
+//   - gemini   : GEMINI_API_KEY
+function buildAgentEnv(agent, { ollamaBaseUrl, model }) {
+  const base = ollamaBaseUrl.replace(/\/+$/, '');
+  switch (agent) {
+    case 'aider':
+      return [
+        `OLLAMA_BASE_URL=${base}`,
+        `OPENAI_API_KEY=ollama`,
+        `MODEL=${model}`,
+      ];
+    case 'opencode':
+      return [
+        `OPENAI_BASE_URL=${base}/v1`,
+        `OPENAI_API_KEY=ollama`,
+        `MODEL=${model}`,
+      ];
+    case 'codex': {
+      const codexKey = getConfigSecret('OPENAI_API_KEY') || 'ollama';
+      return [
+        `OPENAI_API_KEY=${codexKey}`,
+        `OPENAI_BASE_URL=${base}/v1`,
+        `MODEL=${model}`,
+      ];
+    }
+    case 'gemini': {
+      const geminiKey = getConfigSecret('GOOGLE_API_KEY') || '';
+      return [
+        `GEMINI_API_KEY=${geminiKey}`,
+        `MODEL=${model}`,
+      ];
+    }
+    default:
+      return [
+        `OLLAMA_BASE_URL=${base}`,
+        `OPENAI_API_KEY=ollama`,
+        `MODEL=${model}`,
+      ];
+  }
 }
 
 async function runJobContainer({ jobId, containerName, image, env }) {
