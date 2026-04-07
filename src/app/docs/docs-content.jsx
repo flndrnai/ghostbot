@@ -191,14 +191,44 @@ export function DocsContent() {
                 anywhere. With GitHub, you get a clean PR workflow: agent runs → PR opens →
                 you review on github.com → merge.
               </Block>
-              <Block label="What we do together">
+              <Block label="Step-by-step setup">
+                <p className="font-semibold text-foreground">Phase 1 — Generate the token on GitHub</p>
                 <ol className="list-decimal pl-5 space-y-1.5">
-                  <li>You create a fine-scoped Personal Access Token at github.com/settings/tokens (scopes: <code>repo</code>, <code>workflow</code>)</li>
-                  <li>You paste it into the GitHub admin page</li>
-                  <li>You enter <code>flndrnai/ghostbot</code> (or whatever target repo)</li>
-                  <li>I help you verify Test Connection passes and run a sanity-check agent job</li>
+                  <li>Open <a className="text-primary underline" href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener noreferrer">github.com/settings/tokens?type=beta</a> (the Fine-grained tokens page — safer than classic)</li>
+                  <li>Click <strong>Generate new token</strong></li>
+                  <li><strong>Token name</strong>: <code>ghostbot</code></li>
+                  <li><strong>Expiration</strong>: 90 days (or custom)</li>
+                  <li><strong>Resource owner</strong>: your GitHub username (e.g. <code>flndrnai</code>)</li>
+                  <li><strong>Repository access</strong>: <em>Only select repositories</em> → pick the repo(s) GhostBot should manage</li>
+                  <li><strong>Repository permissions</strong> — set these to <em>Read and write</em>:
+                    <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                      <li>Contents</li>
+                      <li>Pull requests</li>
+                      <li>Issues</li>
+                      <li>Workflows (only if you touch GitHub Actions)</li>
+                      <li>Metadata is auto-set to read-only</li>
+                    </ul>
+                  </li>
+                  <li>Click <strong>Generate token</strong> at the bottom</li>
+                  <li><strong className="text-destructive">COPY THE TOKEN IMMEDIATELY</strong> — it starts with <code>github_pat_...</code> and GitHub will never show it again. If you lose it, you have to generate a new one.</li>
                 </ol>
-                <strong>Ping me when you&apos;re ready</strong> — we&apos;ll do this in 5 minutes.
+
+                <p className="font-semibold text-foreground mt-4">Phase 2 — Save it in GhostBot</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Open <a className="text-primary underline" href="/admin/github">/admin/github</a></li>
+                  <li><strong>GitHub PAT</strong>: paste the <code>github_pat_...</code> token from Phase 1</li>
+                  <li><strong>Owner</strong>: your GitHub username (e.g. <code>flndrnai</code>)</li>
+                  <li><strong>Repository</strong>: the repo name without the owner (e.g. <code>ghostbot</code>)</li>
+                  <li>Click <strong>Save</strong></li>
+                  <li>Click <strong>Test Connection</strong> — should show: <em>Connected as &lt;your-username&gt;</em></li>
+                </ol>
+
+                <p className="font-semibold text-foreground mt-4">Troubleshooting</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><em>401 Unauthorized</em> → token typo or expired, regenerate</li>
+                  <li><em>404 Not Found</em> → owner/repo typo, or token doesn&apos;t have access to that repo</li>
+                  <li><em>403 Forbidden</em> → token is missing required permissions, regenerate with the scopes above</li>
+                </ul>
               </Block>
             </Section>
 
@@ -219,14 +249,46 @@ export function DocsContent() {
                 Long-running agent jobs are exactly the kind of thing you want to fire-and-forget
                 from your phone. Telegram is the lowest-friction way to do that.
               </Block>
-              <Block label="What we do together">
+              <Block label="Step-by-step setup">
+                <p className="font-semibold text-foreground">Phase 1 — Create the bot via @BotFather</p>
                 <ol className="list-decimal pl-5 space-y-1.5">
-                  <li>You message <a className="text-primary underline" href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a> on Telegram, run <code>/newbot</code>, get a bot token</li>
-                  <li>You message your new bot once so it has a chat ID</li>
-                  <li>You paste the token + your numeric chat ID into the Telegram admin page</li>
-                  <li>I help you verify the welcome message arrives and webhook is registered</li>
+                  <li>Open Telegram, search for <a className="text-primary underline" href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer">@BotFather</a> (the official Telegram bot for managing bots)</li>
+                  <li>Send <code>/newbot</code></li>
+                  <li>Pick a display name (e.g. <code>GhostBot Personal</code>)</li>
+                  <li>Pick a username — must end in <code>bot</code> (e.g. <code>flndrn_ghostbot</code>)</li>
+                  <li>BotFather replies with a token like <code>123456789:ABCdefGhIJKlmnoPQRstuVWXyz</code> — <strong className="text-destructive">copy it</strong></li>
                 </ol>
-                <strong>Ping me when you&apos;re ready.</strong>
+
+                <p className="font-semibold text-foreground mt-4">Phase 2 — Get your numeric Chat ID</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>In Telegram, search for your new bot by username and send it any message (e.g. <code>hi</code>)</li>
+                  <li>Open <a className="text-primary underline" href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer">@userinfobot</a> (a free utility bot)</li>
+                  <li>Send it <code>/start</code> — it replies with your numeric Chat ID (e.g. <code>123456789</code>)</li>
+                  <li>Copy that number</li>
+                </ol>
+
+                <p className="font-semibold text-foreground mt-4">Phase 3 — Connect in GhostBot</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Open <a className="text-primary underline" href="/admin/telegram">/admin/telegram</a></li>
+                  <li><strong>Bot Token</strong>: paste the BotFather token from Phase 1</li>
+                  <li><strong>Chat ID</strong>: paste the number from Phase 2 (restricts the bot to only respond to you)</li>
+                  <li>Click <strong>Connect Bot</strong> — you should receive a welcome message in Telegram from your bot</li>
+                </ol>
+
+                <p className="font-semibold text-foreground mt-4">Phase 4 — Register the webhook</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>The Webhook Registration card appears once the bot is connected</li>
+                  <li><strong>Public URL</strong>: <code>https://ghostbot.dev</code> (your GhostBot domain — must be HTTPS)</li>
+                  <li>Click <strong>Register Webhook</strong> — card flips to green Active state</li>
+                  <li>Telegram now POSTs every incoming bot message to <code>/api/telegram/webhook</code></li>
+                </ol>
+
+                <p className="font-semibold text-foreground mt-4">Troubleshooting</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><em>No welcome message</em> → token typo, or you forgot to message the bot first</li>
+                  <li><em>Webhook returns 401</em> → re-register; the secret is regenerated each connect</li>
+                  <li><em>Bot doesn&apos;t reply to messages</em> → check Dokploy logs for <code>[telegram]</code> entries</li>
+                </ul>
               </Block>
             </Section>
 
