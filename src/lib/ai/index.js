@@ -29,12 +29,18 @@ function buildHistory(clientHistory, chatId, userMessage) {
 }
 
 export async function* chatStream(chatId, userId, userMessage, clientHistory = null) {
+  console.log('[chatStream] start', { chatId, userId, msgLen: userMessage?.length });
+
   let chat = getChatById(chatId);
   if (!chat) {
+    console.log('[chatStream] creating new chat', { chatId, userId });
     createChat(userId, 'New Chat', chatId);
+  } else {
+    console.log('[chatStream] existing chat', { chatId, chatUserId: chat.userId });
   }
 
   saveMessage(chatId, 'user', userMessage);
+  console.log('[chatStream] user message saved');
 
   const provider = getConfig('LLM_PROVIDER') || 'ollama';
   let model = getConfig('LLM_MODEL') || '';
@@ -146,8 +152,11 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     }
   }
 
+  console.log('[chatStream] stream done', { fullContentLen: fullContent.length, isError: fullContent.startsWith('Error:') });
+
   if (fullContent && !fullContent.startsWith('Error:')) {
     const savedMsg = saveMessage(chatId, 'assistant', fullContent);
+    console.log('[chatStream] assistant message saved', { messageId: savedMsg.id });
     recordTokenUsage({
       chatId,
       messageId: savedMsg.id,

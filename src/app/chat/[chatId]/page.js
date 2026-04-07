@@ -23,11 +23,28 @@ export default async function ChatIdPage({ params }) {
   const { chatId } = await params;
   const chat = getChatById(chatId);
 
-  if (!chat) redirect('/');
-  if (chat.userId !== session.user.id) redirect('/');
+  console.log('[chat-page]', {
+    chatId,
+    sessionUserId: session?.user?.id,
+    chatExists: !!chat,
+    chatUserId: chat?.userId,
+    chatTitle: chat?.title,
+  });
+
+  if (!chat) {
+    console.log('[chat-page] chat not found, redirecting to /');
+    redirect('/');
+  }
+  if (chat.userId !== session.user.id) {
+    console.log('[chat-page] userId mismatch', { chatUserId: chat.userId, sessionUserId: session.user.id });
+    redirect('/');
+  }
 
   const dbMessages = getMessagesByChatId(chatId);
+  console.log('[chat-page] dbMessages count:', dbMessages?.length, 'roles:', dbMessages?.map((m) => m.role));
+
   const initialMessages = formatMessagesForClient(dbMessages);
+  console.log('[chat-page] initialMessages count:', initialMessages.length);
 
   return <ChatPage session={session} chatId={chatId} initialMessages={initialMessages} />;
 }
