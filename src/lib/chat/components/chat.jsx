@@ -12,12 +12,14 @@ function sanitizeMessages(arr) {
 }
 
 export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
-  const { triggerRefresh, registerMessageHandler } = useChatNav();
+  const { triggerRefresh, registerMessageHandler, registerAgentJobHandler } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
   const [localInput, setLocalInput] = useState('');
   const [messages, setMessages] = useState(() => sanitizeMessages(initialMessages));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [agentMode, setAgentMode] = useState(false);
+  const [jobs, setJobs] = useState([]);
 
   // Sync initial messages ONLY when the chat ID actually changes,
   // not when initialMessages reference changes (parent re-renders create
@@ -27,6 +29,44 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
     chatIdRef.current = initialChatId || null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialChatId]);
+
+  // Load existing agent jobs for this chat on mount / chat change
+  useEffect(() => {
+    if (!initialChatId) {
+      setJobs([]);
+      return;
+    }
+    fetch(`/api/agent-jobs?chatId=${encodeURIComponent(initialChatId)}`)
+      .then((r) => r.ok ? r.json() : { jobs: [] })
+      .then((data) => setJobs(Array.isArray(data.jobs) ? data.jobs : []))
+      .catch(() => {});
+  }, [initialChatId]);
+
+  // Live agent job sync — updates status and logs via SSE
+  useEffect(() => {
+    if (!initialChatId || !registerAgentJobHandler) return;
+    const handler = (event) => {
+      if (!event) return;
+      if (event.type === 'agent-job:created') {
+        if (event.job?.chatId !== initialChatId) return;
+        setJobs((prev) => {
+          if (prev.some((j) => j.id === event.job.id)) return prev;
+          return [event.job, ...prev];
+        });
+      } else if (event.type === 'agent-job:updated') {
+        if (event.job?.chatId !== initialChatId) return;
+        setJobs((prev) => prev.map((j) => (j.id === event.job.id ? { ...j, ...event.job } : j)));
+      } else if (event.type === 'agent-job:log') {
+        if (event.chatId !== initialChatId) return;
+        setJobs((prev) => prev.map((j) => (
+          j.id === event.jobId
+            ? { ...j, outputTail: ((j.outputTail || '') + event.chunk).slice(-2000) }
+            : j
+        )));
+      }
+    };
+    return registerAgentJobHandler(handler);
+  }, [initialChatId, registerAgentJobHandler]);
 
   // Cross-device live sync: receive messages saved by other devices in this chat.
   useEffect(() => {
@@ -54,6 +94,27 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
     return registerMessageHandler(initialChatId, handler);
   }, [initialChatId, registerMessageHandler]);
 
+  const handleAgentJob = useCallback(
+    async (prompt) => {
+      setError(null);
+      try {
+        const res = await fetch('/api/agent-jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId: chatIdRef.current, prompt }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `Failed to launch agent (${res.status})`);
+        }
+        // The sync bus will push the agent-job:created event; nothing else to do.
+      } catch (err) {
+        setError({ message: err.message || 'Failed to launch agent job' });
+      }
+    },
+    [],
+  );
+
   const handleSend = useCallback(
     async (text) => {
       const message = (text || localInput || '').trim();
@@ -61,6 +122,20 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
 
       setLocalInput('');
       setError(null);
+
+      // Agent mode: fire a job instead of a chat stream.
+      if (agentMode) {
+        const userMessage = {
+          id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: 'user',
+          content: message,
+          parts: [{ type: 'text', text: message }],
+          createdAt: new Date(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        await handleAgentJob(message);
+        return;
+      }
 
       // Add user message immediately
       const userMessage = {
@@ -164,12 +239,12 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         setIsLoading(false);
       }
     },
-    [localInput, isLoading, messages, triggerRefresh],
+    [localInput, isLoading, messages, triggerRefresh, agentMode, handleAgentJob],
   );
 
   return (
     <div className="flex h-full flex-col">
-      <Messages messages={messages} isLoading={isLoading} onSuggestion={handleSend} />
+      <Messages messages={messages} isLoading={isLoading} onSuggestion={handleSend} jobs={jobs} />
       {error && (
         <div className="mx-4 mb-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
           {error.message || 'Something went wrong. Please try again.'}
@@ -180,6 +255,8 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         onInputChange={setLocalInput}
         onSend={handleSend}
         isLoading={isLoading}
+        agentMode={agentMode}
+        onToggleMode={setAgentMode}
       />
     </div>
   );

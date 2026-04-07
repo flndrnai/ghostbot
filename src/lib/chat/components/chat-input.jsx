@@ -1,13 +1,15 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { ArrowUp, Square } from '../../icons/index.jsx';
+import { ArrowUp, Square, Wrench, MessageSquare } from '../../icons/index.jsx';
 
 export function ChatInput(props) {
   const input = props.input || '';
   const onInputChange = props.onInputChange;
   const onSend = props.onSend;
   const isLoading = props.isLoading || false;
+  const agentMode = !!props.agentMode;
+  const onToggleMode = props.onToggleMode;
 
   const textareaRef = useRef(null);
 
@@ -56,20 +58,28 @@ export function ChatInput(props) {
               value={input}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              placeholder="Send a message..."
+              placeholder={agentMode ? 'Describe the coding task for the agent...' : 'Send a message...'}
               rows={1}
               disabled={isLoading}
               autoComplete="off"
               className={`
                 w-full resize-none rounded-2xl border bg-muted/50
-                pl-5 pr-14 py-4 text-sm text-foreground leading-relaxed
+                pl-14 pr-14 py-4 text-sm text-foreground leading-relaxed
                 placeholder:text-muted-foreground/40
                 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30
                 transition-all duration-200
                 disabled:opacity-60
-                ${hasValue ? 'border-primary/20' : 'border-border/60'}
+                ${agentMode ? 'border-primary/40' : hasValue ? 'border-primary/20' : 'border-border/60'}
               `}
             />
+            <button
+              type="button"
+              onClick={() => typeof onToggleMode === 'function' && onToggleMode(!agentMode)}
+              className={`absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl transition-all cursor-pointer ${agentMode ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground'}`}
+              title={agentMode ? 'Agent mode ON — click to switch to chat' : 'Chat mode — click to switch to agent job'}
+            >
+              {agentMode ? <Wrench className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+            </button>
             <button
               type="submit"
               disabled={!hasValue || isLoading}
@@ -89,7 +99,9 @@ export function ChatInput(props) {
           </div>
         </form>
         <p className="mt-3 text-center text-xs text-foreground/80">
-          GhostBot may make mistakes. Verify important information.
+          {agentMode
+            ? 'Agent mode: the next message launches a coding agent that can edit code and open a PR.'
+            : 'GhostBot may make mistakes. Verify important information.'}
         </p>
       </div>
     </div>

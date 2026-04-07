@@ -9,6 +9,7 @@ const ChatNavContext = createContext({
   refreshKey: 0,
   triggerRefresh: () => {},
   registerMessageHandler: () => () => {},
+  registerAgentJobHandler: () => () => {},
 });
 
 export function useChatNav() {
@@ -22,6 +23,8 @@ export function ChatNavProvider({ children }) {
   // Per-chat message handlers, registered by mounted Chat components.
   // Keyed by chatId so events route only to the right open conversation.
   const handlersRef = useRef(new Map());
+  // Global agent-job event handlers (Set of callbacks)
+  const agentJobHandlersRef = useRef(new Set());
 
   const navigateToChat = useCallback((chatId) => {
     setActiveChatId(chatId);
@@ -41,6 +44,14 @@ export function ChatNavProvider({ children }) {
     };
   }, []);
 
+  const registerAgentJobHandler = useCallback((handler) => {
+    if (typeof handler !== 'function') return () => {};
+    agentJobHandlersRef.current.add(handler);
+    return () => {
+      agentJobHandlersRef.current.delete(handler);
+    };
+  }, []);
+
   const handleSyncEvent = useCallback((event) => {
     if (!event) return;
     switch (event.type) {
@@ -55,6 +66,13 @@ export function ChatNavProvider({ children }) {
       case 'chat:updated':
       case 'chat:deleted':
         setRefreshKey((k) => k + 1);
+        break;
+      case 'agent-job:created':
+      case 'agent-job:updated':
+      case 'agent-job:log':
+        for (const h of agentJobHandlersRef.current) {
+          try { h(event); } catch {}
+        }
         break;
       default:
         break;
@@ -71,6 +89,7 @@ export function ChatNavProvider({ children }) {
         refreshKey,
         triggerRefresh,
         registerMessageHandler,
+        registerAgentJobHandler,
       }}
     >
       {children}
