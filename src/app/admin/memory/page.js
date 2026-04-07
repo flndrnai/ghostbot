@@ -17,7 +17,7 @@ import { CheckCircle, XCircle, Loader2, Trash2, Plus, RefreshCw } from '../../..
 function formatDate(ts) {
   if (!ts) return '';
   const d = new Date(ts);
-  return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short', hour12: false });
 }
 
 export default function MemoryPage() {

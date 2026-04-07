@@ -7,7 +7,7 @@ import { RefreshCw } from '../../../lib/icons/index.jsx';
 
 function formatTs(ts) {
   if (!ts) return '';
-  return new Date(ts).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(ts).toLocaleString([], { dateStyle: 'short', timeStyle: 'short', hour12: false });
 }
 
 export default function MonitoringPage() {

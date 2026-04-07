@@ -32,7 +32,7 @@ export function mapClaudeCodeLine(parsed) {
   if (type === 'system') return [{ type: 'skip' }];
   if (type === 'rate_limit_event') {
     if (parsed.rate_limit_info?.status === 'allowed') return [{ type: 'skip' }];
-    return [{ type: 'text', text: `Rate limited — resets at ${new Date((parsed.rate_limit_info?.resetsAt || 0) * 1000).toLocaleString()}` }];
+    return [{ type: 'text', text: `Rate limited — resets at ${new Date((parsed.rate_limit_info?.resetsAt || 0) * 1000).toLocaleString([], { hour12: false })}` }];
   }
 
   if (type === 'assistant' && message?.content) {

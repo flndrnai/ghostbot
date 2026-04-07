@@ -15,7 +15,7 @@ function formatChatTimestamp(ts) {
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const isYesterday = d.toDateString() === yesterday.toDateString();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   if (sameDay) return `Today · ${time}`;
   if (isYesterday) return `Yesterday · ${time}`;
   const day = d.toLocaleDateString([], { day: '2-digit', month: 'short' });
