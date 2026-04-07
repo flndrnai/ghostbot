@@ -12,7 +12,7 @@ function sanitizeMessages(arr) {
 }
 
 export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
-  const { triggerRefresh } = useChatNav();
+  const { triggerRefresh, registerMessageHandler } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
   const [localInput, setLocalInput] = useState('');
   const [messages, setMessages] = useState(() => sanitizeMessages(initialMessages));
@@ -27,6 +27,32 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
     chatIdRef.current = initialChatId || null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialChatId]);
+
+  // Cross-device live sync: receive messages saved by other devices in this chat.
+  useEffect(() => {
+    if (!initialChatId) return;
+    const handler = (incomingMsg) => {
+      if (!incomingMsg) return;
+      setMessages((prev) => {
+        // Skip if we already have this message id
+        if (prev.some((m) => m.id === incomingMsg.id)) return prev;
+        // Skip if the last message has identical role + content (echo from this tab)
+        const last = prev[prev.length - 1];
+        if (last && last.role === incomingMsg.role && last.content === incomingMsg.content) return prev;
+        return [
+          ...prev,
+          {
+            id: incomingMsg.id,
+            role: incomingMsg.role,
+            content: incomingMsg.content,
+            parts: [{ type: 'text', text: incomingMsg.content }],
+            createdAt: incomingMsg.createdAt || Date.now(),
+          },
+        ];
+      });
+    };
+    return registerMessageHandler(initialChatId, handler);
+  }, [initialChatId, registerMessageHandler]);
 
   const handleSend = useCallback(
     async (text) => {
