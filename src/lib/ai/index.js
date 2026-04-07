@@ -174,41 +174,10 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
 }
 
 export async function autoTitle(chatId, userMessage) {
+  // Use the first user prompt as the title (no LLM call needed).
+  // Truncate to a reasonable length so the sidebar stays clean.
   try {
-    const provider = getConfig('LLM_PROVIDER') || 'ollama';
-
-    if (provider === 'ollama') {
-      const baseUrl = getConfig('OLLAMA_BASE_URL') || 'http://localhost:11434';
-      const model = getConfig('LLM_MODEL') || '';
-      if (!model) return;
-
-      let title = '';
-      const stream = streamOllamaChat({
-        baseUrl,
-        model,
-        messages: [
-          { role: 'system', content: 'Generate a concise 3-6 word title. Respond with ONLY the title, no quotes.' },
-          { role: 'user', content: userMessage },
-        ],
-        temperature: 0.3,
-      });
-      for await (const chunk of stream) {
-        if (chunk.type === 'text') title += chunk.text;
-      }
-      title = title.trim().replace(/^["']|["']$/g, '').slice(0, 80);
-      if (title) updateChatTitle(chatId, title);
-      return;
-    }
-
-    const model = await createModel({ maxTokens: 100 });
-    const response = await model.invoke([
-      new SystemMessage('Generate a concise 3-6 word title for this conversation. Respond with ONLY the title text, no quotes or formatting.'),
-      new HumanMessage(userMessage),
-    ]);
-    const title = (typeof response.content === 'string' ? response.content : '')
-      .trim()
-      .replace(/^["']|["']$/g, '')
-      .slice(0, 80);
+    const title = String(userMessage || '').trim().replace(/\s+/g, ' ').slice(0, 80);
     if (title) updateChatTitle(chatId, title);
   } catch {
     // Silent failure

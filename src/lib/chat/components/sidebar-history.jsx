@@ -7,6 +7,21 @@ import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from './u
 import { useChatNav } from './chat-nav-context.jsx';
 import { renameChatAction, deleteChatAction, toggleStarAction } from '../actions.js';
 
+function formatChatTimestamp(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return `Today · ${time}`;
+  if (isYesterday) return `Yesterday · ${time}`;
+  const day = d.toLocaleDateString([], { day: '2-digit', month: 'short' });
+  return `${day} · ${time}`;
+}
+
 function groupChatsByTime(chats) {
   const now = Date.now();
   const day = 86400000;
@@ -91,14 +106,20 @@ function ChatItem({ chat, isActive }) {
   return (
     <div className="group relative">
       <SidebarMenuButton
+        href={`/chat/${chat.id}`}
         isActive={isActive}
         onClick={() => {
-          router.push(`/chat/${chat.id}`);
           if (isMobile) setOpenMobile(false);
         }}
+        className="!h-auto !py-2"
       >
-        <span className="truncate flex-1 text-left">{chat.title}</span>
-        {chat.starred ? <Star className="h-3 w-3 fill-primary text-primary" /> : null}
+        <div className="flex-1 min-w-0 text-left">
+          <div className="truncate text-sm leading-tight">{chat.title}</div>
+          <div className="mt-0.5 truncate text-[10px] text-muted-foreground/60">
+            {formatChatTimestamp(chat.updatedAt)}
+          </div>
+        </div>
+        {chat.starred ? <Star className="h-3 w-3 fill-primary text-primary flex-shrink-0" /> : null}
       </SidebarMenuButton>
 
       {/* Hover actions */}
