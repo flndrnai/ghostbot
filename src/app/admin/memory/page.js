@@ -11,8 +11,11 @@ import {
   addManualEntry,
   removeMemoryEntry,
   testEmbedding,
+  exportMemory,
 } from '../../../lib/admin/memory-actions.js';
 import { CheckCircle, XCircle, Loader2, Trash2, Plus, RefreshCw } from '../../../lib/icons/index.jsx';
+
+const PAGE_SIZE = 25;
 
 function formatDate(ts) {
   if (!ts) return '';
@@ -24,31 +27,69 @@ export default function MemoryPage() {
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState([]);
   const [summaries, setSummaries] = useState([]);
+  const [stats, setStats] = useState(null);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
+  const [sourceTypeFilter, setSourceTypeFilter] = useState('');
+  const [loadOffset, setLoadOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   // Manual entry form
   const [showManual, setShowManual] = useState(false);
   const [manualTitle, setManualTitle] = useState('');
   const [manualContent, setManualContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Embedding status
   const [embeddingStatus, setEmbeddingStatus] = useState(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts = {}) => {
+    const { reset = true, offset = 0 } = opts;
     setLoading(true);
     try {
-      const data = await listMemory({ limit: 50 });
-      setEntries(data.entries);
-      setSummaries(data.summaries);
+      const data = await listMemory({
+        limit: PAGE_SIZE,
+        offset,
+        sourceType: sourceTypeFilter || null,
+      });
+      setStats(data.stats || null);
+      if (reset) {
+        setEntries(data.entries);
+        setSummaries(data.summaries);
+      } else {
+        setEntries((prev) => [...prev, ...data.entries]);
+      }
+      setHasMore(data.entries.length === PAGE_SIZE);
+      setLoadOffset(offset + data.entries.length);
     } catch {}
     setLoading(false);
-  }, []);
+  }, [sourceTypeFilter]);
+
+  async function loadMore() {
+    await refresh({ reset: false, offset: loadOffset });
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const data = await exportMemory();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ghostbot-memory-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {}
+    setExporting(false);
+  }
 
   useEffect(() => {
-    refresh();
+    refresh({ reset: true, offset: 0 });
     testEmbedding().then(setEmbeddingStatus).catch(() => {});
   }, [refresh]);
 
@@ -96,17 +137,44 @@ export default function MemoryPage() {
 
   return (
     <div className="space-y-6 stagger-children">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Memory</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Knowledge entries and chat summaries GhostBot uses to recall past work
           </p>
         </div>
-        <Button onClick={refresh} variant="outline" size="sm" disabled={loading}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExport} variant="outline" size="sm" disabled={exporting}>
+            {exporting ? <><Loader2 className="h-4 w-4 mr-2" /> Exporting...</> : 'Export JSON'}
+          </Button>
+          <Button onClick={() => refresh({ reset: true, offset: 0 })} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+          </Button>
+        </div>
       </div>
+
+      {/* Stats header */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Knowledge entries</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{stats.totalEntries}</p>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Chat summaries</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{stats.totalSummaries}</p>
+          </div>
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Embedded entries</p>
+            <p className="text-xl font-bold text-primary mt-0.5">{stats.embeddedEntries}</p>
+          </div>
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Embedded summaries</p>
+            <p className="text-xl font-bold text-primary mt-0.5">{stats.embeddedSummaries}</p>
+          </div>
+        </div>
+      )}
 
       {/* Embedding status */}
       <Card>
@@ -244,10 +312,28 @@ export default function MemoryPage() {
       {/* Knowledge entries */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            Knowledge Entries {searchResults ? `(search: ${displayedEntries.length})` : `(${entries.length})`}
-          </CardTitle>
-          <CardDescription>Manual notes, code snippets, agent job outputs</CardDescription>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="text-lg">
+                Knowledge Entries {searchResults ? `(search: ${displayedEntries.length})` : `(${entries.length}${stats?.totalEntries ? ` / ${stats.totalEntries}` : ''})`}
+              </CardTitle>
+              <CardDescription>Manual notes, code snippets, agent job outputs</CardDescription>
+            </div>
+            {!searchResults && (
+              <select
+                value={sourceTypeFilter}
+                onChange={(e) => setSourceTypeFilter(e.target.value)}
+                className="h-9 rounded-lg border border-border bg-input px-3 text-xs text-foreground"
+              >
+                <option value="">All sources</option>
+                <option value="chat">chat</option>
+                <option value="agent_job">agent_job</option>
+                <option value="manual">manual</option>
+                <option value="code">code</option>
+                <option value="summary">summary</option>
+              </select>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {displayedEntries.length === 0 ? (
@@ -277,6 +363,13 @@ export default function MemoryPage() {
                 </div>
               </div>
             ))
+          )}
+          {!searchResults && hasMore && (
+            <div className="pt-2 text-center">
+              <Button variant="outline" size="sm" onClick={loadMore} disabled={loading}>
+                {loading ? <><Loader2 className="h-4 w-4 mr-2" /> Loading...</> : 'Load more'}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

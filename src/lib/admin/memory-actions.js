@@ -18,12 +18,25 @@ async function requireUser() {
   return session;
 }
 
-export async function listMemory({ limit = 50 } = {}) {
+export async function listMemory({ limit = 50, offset = 0, sourceType = null } = {}) {
   const session = await requireUser();
   const userId = session.user.id;
-  const entries = listKnowledgeEntries({ userId, limit });
+  let entries = listKnowledgeEntries({ userId, limit: 500, offset: 0 });
+  if (sourceType) entries = entries.filter((e) => e.sourceType === sourceType);
+  const totalEntries = entries.length;
+  entries = entries.slice(offset, offset + limit);
+
   const summaries = listChatSummaries({ userId, limit });
+  const totalSummaries = listChatSummaries({ userId, limit: 10000 }).length;
+
   return {
+    stats: {
+      totalEntries,
+      totalSummaries,
+      embeddedEntries: entries.filter((e) => !!e.embedding).length,
+      embeddedSummaries: summaries.filter((s) => !!s.embedding).length,
+      sourceTypes: Array.from(new Set(entries.map((e) => e.sourceType))),
+    },
     entries: entries.map((e) => ({
       id: e.id,
       sourceType: e.sourceType,
@@ -41,6 +54,36 @@ export async function listMemory({ limit = 50 } = {}) {
         summary: s.summary,
         topics,
         hasEmbedding: !!s.embedding,
+        createdAt: s.createdAt,
+      };
+    }),
+  };
+}
+
+export async function exportMemory() {
+  const session = await requireUser();
+  const userId = session.user.id;
+  const entries = listKnowledgeEntries({ userId, limit: 10000 });
+  const summaries = listChatSummaries({ userId, limit: 10000 });
+  return {
+    exportedAt: new Date().toISOString(),
+    userId,
+    entries: entries.map((e) => ({
+      id: e.id,
+      sourceType: e.sourceType,
+      sourceId: e.sourceId,
+      title: e.title,
+      content: e.content,
+      createdAt: e.createdAt,
+    })),
+    summaries: summaries.map((s) => {
+      let topics = [];
+      try { topics = JSON.parse(s.keyTopics || '[]'); } catch {}
+      return {
+        id: s.id,
+        chatId: s.chatId,
+        summary: s.summary,
+        topics,
         createdAt: s.createdAt,
       };
     }),
