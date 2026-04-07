@@ -1,6 +1,7 @@
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
 import { createModel } from './model.js';
-import { streamOllamaChat } from './ollama-client.js';
+import { streamOllamaChat, pingOllama } from './ollama-client.js';
+import { setConfig } from '../config.js';
 import { TokenCounter } from './token-counter.js';
 import { getConfig } from '../config.js';
 import { getChatById, createChat, saveMessage, updateChatTitle, getMessagesByChatId } from '../db/chats.js';
@@ -36,7 +37,17 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   saveMessage(chatId, 'user', userMessage);
 
   const provider = getConfig('LLM_PROVIDER') || 'ollama';
-  const model = getConfig('LLM_MODEL') || '';
+  let model = getConfig('LLM_MODEL') || '';
+
+  // Auto-pick first installed Ollama model if none configured (eliminates "stuck" state)
+  if (provider === 'ollama' && !model) {
+    const baseUrl = getConfig('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const ping = await pingOllama(baseUrl);
+    if (ping.ok && ping.models.length > 0) {
+      model = ping.models[0].name;
+      setConfig('LLM_MODEL', model);
+    }
+  }
   const systemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
   const temperature = parseFloat(getConfig('TEMPERATURE') || '0.7');
 

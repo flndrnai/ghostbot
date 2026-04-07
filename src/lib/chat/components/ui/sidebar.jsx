@@ -123,7 +123,7 @@ export function SidebarMenuItem({ className, ...props }) {
   return <li className={cn('', className)} {...props} />;
 }
 
-export function SidebarMenuButton({ children, isActive, className, tooltip, onClick, ...props }) {
+export function SidebarMenuButton({ children, isActive, className, tooltip, onClick, href, ...props }) {
   const { open } = useSidebar();
   const [hovered, setHovered] = useState(false);
 
@@ -135,19 +135,39 @@ export function SidebarMenuButton({ children, isActive, className, tooltip, onCl
     return child;
   });
 
+  const classes = cn(
+    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
+    'hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+    'active:scale-[0.98] cursor-pointer',
+    isActive && 'bg-primary/10 text-primary font-medium border-l-2 border-primary',
+    !open && 'justify-center px-0',
+    className,
+  );
+
+  // If href is provided, render as a real anchor tag for guaranteed navigation
+  if (href) {
+    return (
+      <a
+        href={href}
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className={classes}
+        title={!open ? tooltip : undefined}
+        {...props}
+      >
+        {enhancedChildren}
+      </a>
+    );
+  }
+
   return (
     <button
+      type="button"
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
-        'hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
-        'active:scale-[0.98] cursor-pointer',
-        isActive && 'bg-primary/10 text-primary font-medium border-l-2 border-primary',
-        !open && 'justify-center px-0',
-        className,
-      )}
+      className={classes}
       title={!open ? tooltip : undefined}
       {...props}
     >
