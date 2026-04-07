@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Settings, Trash2 } from '../../icons/index.jsx';
-import { toggleClusterAction, starClusterAction, deleteClusterAction } from '../actions.js';
+import { Star, Settings, Trash2, ArrowUp, Loader2 } from '../../icons/index.jsx';
+import { toggleClusterAction, starClusterAction, deleteClusterAction, runClusterNowAction } from '../actions.js';
 
 export function ClusterCard({ cluster, onRefresh }) {
   const router = useRouter();
+  const [running, setRunning] = useState(false);
+  const [runMsg, setRunMsg] = useState(null);
 
   async function handleToggle(e) {
     e.stopPropagation();
@@ -23,6 +26,25 @@ export function ClusterCard({ cluster, onRefresh }) {
     e.stopPropagation();
     await deleteClusterAction(cluster.id);
     onRefresh?.();
+  }
+
+  async function handleRunNow(e) {
+    e.stopPropagation();
+    if (running) return;
+    setRunning(true);
+    setRunMsg(null);
+    try {
+      const res = await runClusterNowAction(cluster.id);
+      if (res.error) {
+        setRunMsg({ type: 'error', text: res.error });
+      } else {
+        setRunMsg({ type: 'success', text: `Chain started — ${res.roleCount} role(s). Check Monitoring for status.` });
+      }
+    } catch (err) {
+      setRunMsg({ type: 'error', text: err.message });
+    }
+    setRunning(false);
+    setTimeout(() => setRunMsg(null), 6000);
   }
 
   return (
@@ -60,10 +82,29 @@ export function ClusterCard({ cluster, onRefresh }) {
             cluster.enabled ? 'translate-x-4' : 'translate-x-1'
           }`} />
         </button>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground flex-1 truncate">
           {cluster.systemPrompt ? `${cluster.systemPrompt.slice(0, 50)}...` : 'No system prompt'}
         </span>
       </div>
+
+      <button
+        onClick={handleRunNow}
+        disabled={running}
+        className={`mt-3 w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
+          running
+            ? 'bg-muted text-muted-foreground'
+            : 'bg-primary/15 text-primary hover:bg-primary/25 border border-primary/30'
+        }`}
+      >
+        {running ? <Loader2 className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />}
+        {running ? 'Launching...' : 'Run now'}
+      </button>
+
+      {runMsg && (
+        <p className={`mt-2 text-[11px] ${runMsg.type === 'error' ? 'text-destructive' : 'text-primary'}`}>
+          {runMsg.text}
+        </p>
+      )}
     </div>
   );
 }

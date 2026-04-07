@@ -77,6 +77,66 @@ export async function deleteClusterAction(clusterId) {
   return { success: true };
 }
 
+// ─── Run a whole cluster as a chain of agent jobs ───
+// Fires one agent job per role, in sortOrder. Each job gets the
+// previous role's output appended to its prompt as context.
+// Fire-and-forget: returns immediately; the chain continues in
+// the background.
+
+export async function runClusterNowAction(clusterId) {
+  const session = await requireAuth();
+  const cluster = getClusterById(clusterId);
+  if (!cluster) return { error: 'Cluster not found' };
+  if (cluster.userId !== session.user.id) return { error: 'Not your cluster' };
+
+  const roles = getClusterRolesByCluster(clusterId);
+  if (!roles || roles.length === 0) return { error: 'Cluster has no roles' };
+
+  const { launchAgentJob } = await import('../agent-jobs/launch.js');
+  const { getAgentJob } = await import('../agent-jobs/db.js');
+
+  // Run sequentially in background so the endpoint returns fast
+  (async () => {
+    let lastOutput = '';
+    for (const role of roles) {
+      const contextBlock = lastOutput
+        ? `\n\n---\nPrevious role output:\n${lastOutput.slice(-2000)}`
+        : '';
+      const fullPrompt =
+        (cluster.systemPrompt ? `${cluster.systemPrompt}\n\n` : '') +
+        `Role: ${role.roleName}\n${role.prompt}${contextBlock}`;
+
+      let jobId;
+      try {
+        jobId = await launchAgentJob({
+          userId: session.user.id,
+          prompt: fullPrompt,
+          agent: 'aider',
+          baseBranch: 'main',
+        });
+      } catch (err) {
+        console.error(`[cluster] role ${role.roleName} launch failed:`, err?.message);
+        break;
+      }
+
+      // Poll until this job is done before moving to the next role
+      const start = Date.now();
+      const maxWait = 30 * 60 * 1000; // 30 min cap
+      while (Date.now() - start < maxWait) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const j = getAgentJob(jobId);
+        if (!j) break;
+        if (j.status === 'succeeded' || j.status === 'failed') {
+          lastOutput = j.output || '';
+          break;
+        }
+      }
+    }
+  })().catch((err) => console.error('[cluster] run chain error:', err));
+
+  return { success: true, roleCount: roles.length };
+}
+
 // ─── Roles ───
 
 export async function createClusterRoleAction(clusterId, roleName) {
