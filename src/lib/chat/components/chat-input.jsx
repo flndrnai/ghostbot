@@ -51,12 +51,15 @@ export function ChatInput(props) {
           <div className="relative">
             <textarea
               ref={textareaRef}
+              id="chat-message-input"
+              name="message"
               value={input}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               placeholder="Send a message..."
               rows={1}
               disabled={isLoading}
+              autoComplete="off"
               className={`
                 w-full resize-none rounded-2xl border bg-muted/50
                 pl-5 pr-14 py-4 text-sm text-foreground leading-relaxed
