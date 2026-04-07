@@ -104,12 +104,44 @@ export async function saveChatSettings({ systemPrompt, maxTokens, temperature })
 
 export async function saveGitHubConfig({ token, owner, repo }) {
   await requireAdmin();
-  if (token?.trim()) {
-    setConfigSecret('GH_TOKEN', token.trim());
-    invalidateConfigCache('GH_TOKEN');
+  try {
+    if (token?.trim()) {
+      setConfigSecret('GH_TOKEN', token.trim());
+      invalidateConfigCache('GH_TOKEN');
+    }
+    if (owner?.trim()) {
+      setConfig('GH_OWNER', owner.trim());
+      invalidateConfigCache('GH_OWNER');
+    }
+    if (repo?.trim()) {
+      setConfig('GH_REPO', repo.trim());
+      invalidateConfigCache('GH_REPO');
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
-  if (owner?.trim()) setConfig('GH_OWNER', owner.trim());
-  if (repo?.trim()) setConfig('GH_REPO', repo.trim());
+}
+
+export async function getGitHubConfigStatus() {
+  await requireAdmin();
+  const token = getConfigSecret('GH_TOKEN');
+  const owner = getConfig('GH_OWNER');
+  const repo = getConfig('GH_REPO');
+  return {
+    configured: !!token,
+    owner: owner || '',
+    repo: repo || '',
+  };
+}
+
+export async function removeGitHubConfig() {
+  await requireAdmin();
+  const { deleteConfigSecret } = await import('../db/config.js');
+  deleteConfigSecret('GH_TOKEN');
+  setConfig('GH_OWNER', '');
+  setConfig('GH_REPO', '');
+  invalidateConfigCache();
   return { success: true };
 }
 
