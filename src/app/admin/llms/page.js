@@ -19,6 +19,8 @@ import { CheckCircle, XCircle, Loader2 } from '../../../lib/icons/index.jsx';
 export default function LLMsPage() {
   const [provider, setProvider] = useState('ollama');
   const [model, setModel] = useState('');
+  const [activeProvider, setActiveProvider] = useState(null);
+  const [activeModel, setActiveModel] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [keyConfigured, setKeyConfigured] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -29,8 +31,14 @@ export default function LLMsPage() {
     getSettings().then((s) => {
       setProvider(s.provider);
       setModel(s.model);
+      if (s.provider && s.model) {
+        setActiveProvider(s.provider);
+        setActiveModel(s.model);
+      }
     });
   }, []);
+
+  const isLockedIn = activeProvider && activeModel && activeProvider === provider && activeModel === model;
 
   useEffect(() => {
     const providerDef = BUILTIN_PROVIDERS[provider];
@@ -46,8 +54,20 @@ export default function LLMsPage() {
   const needsKey = providerDef?.credentials?.length > 0;
 
   async function handleSaveProvider() {
+    if (!model) return;
     setSaving(true);
     await saveProviderConfig(provider, model);
+    setActiveProvider(provider);
+    setActiveModel(model);
+    setSaving(false);
+  }
+
+  async function handleDisconnectProvider() {
+    setSaving(true);
+    await saveProviderConfig(provider, '');
+    setActiveProvider(null);
+    setActiveModel(null);
+    setModel('');
     setSaving(false);
   }
 
@@ -90,55 +110,82 @@ export default function LLMsPage() {
       </div>
 
       {/* Provider + Model */}
-      <Card>
+      <Card className={isLockedIn ? 'border-primary/30' : ''}>
         <CardHeader>
-          <CardTitle className="text-lg">Active Provider</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">{isLockedIn ? 'Connected' : 'Active Provider'}</CardTitle>
+            {isLockedIn && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                Active
+              </span>
+            )}
+          </div>
+          {isLockedIn && (
+            <CardDescription className="mt-1">
+              {BUILTIN_PROVIDERS[activeProvider]?.name || activeProvider}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Provider</Label>
-            <select
-              value={provider}
-              onChange={(e) => { setProvider(e.target.value); setModel(''); }}
-              className="flex h-12 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
-            >
-              {Object.entries(BUILTIN_PROVIDERS).map(([key, p]) => (
-                <option key={key} value={key}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {providerDef?.models?.length > 0 && (
-            <div className="space-y-2">
-              <Label>Model</Label>
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="flex h-12 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">Select a model</option>
-                {providerDef.models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+          {isLockedIn ? (
+            <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Model</div>
+                <div className="text-sm font-mono text-foreground truncate">{activeModel}</div>
+              </div>
+              <Button onClick={handleDisconnectProvider} size="sm" variant="destructive" disabled={saving}>
+                Disconnect
+              </Button>
             </div>
-          )}
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>Provider</Label>
+                <select
+                  value={provider}
+                  onChange={(e) => { setProvider(e.target.value); setModel(''); }}
+                  className="flex h-12 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                >
+                  {Object.entries(BUILTIN_PROVIDERS).map(([key, p]) => (
+                    <option key={key} value={key}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
 
-          {provider === 'ollama' && (
-            <div className="space-y-2">
-              <Label>Model Name</Label>
-              <Input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g. qwen2.5:32b, llama3.2, mistral"
-              />
-              <p className="text-xs text-muted-foreground">Enter the exact model name from <code className="bg-muted px-1 rounded">ollama list</code></p>
-            </div>
-          )}
+              {providerDef?.models?.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Model</Label>
+                  <select
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="flex h-12 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+                  >
+                    <option value="">Select a model</option>
+                    {providerDef.models.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          <Button onClick={handleSaveProvider} disabled={saving}>
-            {saving ? 'Saving...' : 'Save & Apply'}
-          </Button>
+              {provider === 'ollama' && (
+                <div className="space-y-2">
+                  <Label>Model Name</Label>
+                  <Input
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="e.g. qwen2.5-coder:7b, qwen2.5:32b, llama3.2"
+                  />
+                  <p className="text-xs text-muted-foreground">Enter the exact model name from <code className="bg-muted px-1 rounded">ollama list</code></p>
+                </div>
+              )}
+
+              <Button onClick={handleSaveProvider} disabled={saving || !model}>
+                {saving ? 'Saving...' : 'Save & Apply'}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
