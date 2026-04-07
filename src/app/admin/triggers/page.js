@@ -1,35 +1,76 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
-import { Webhook, Zap } from '../../../lib/icons/index.jsx';
+import { useState, useEffect, useCallback } from 'react';
+import { Button } from '../../../lib/auth/components/ui/button.jsx';
+import { Card, CardContent } from '../../../lib/auth/components/ui/card.jsx';
+import { Webhook, Zap, RefreshCw, Loader2 } from '../../../lib/icons/index.jsx';
 
 export default function TriggersPage() {
   const [triggers, setTriggers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetch('/api/triggers')
-      .then((r) => r.json())
-      .then(setTriggers)
-      .catch(() => setTriggers([]));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/triggers');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setTriggers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || 'Failed to load triggers');
+      setTriggers([]);
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div className="space-y-6 stagger-children">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Webhook Triggers</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Automatically fire actions when webhooks are received</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Webhook Triggers</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Automatically fire actions when webhooks are received. Edit{' '}
+            <code className="bg-muted px-1 rounded">data/triggers.json</code> to add triggers.
+          </p>
+        </div>
+        <Button onClick={load} variant="outline" size="sm" disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {triggers.length === 0 ? (
+      {loading && triggers.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Loader2 className="h-5 w-5 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">Loading triggers...</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {!loading && triggers.length === 0 && !error && (
         <Card>
           <CardContent className="py-12 text-center">
             <Webhook className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">No triggers configured</p>
-            <p className="text-xs text-muted-foreground/50 mt-1">Edit <code className="bg-muted px-1 rounded">data/triggers.json</code> to add triggers</p>
+            <p className="text-xs text-muted-foreground/50 mt-1">
+              Create <code className="bg-muted px-1 rounded">data/triggers.json</code> with an array of trigger definitions
+            </p>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {triggers.length > 0 && (
         <div className="space-y-3">
           {triggers.map((t, i) => (
             <Card key={i}>

@@ -15,9 +15,11 @@ export default function ContainersPage() {
     setError(null);
     try {
       const response = await fetch('/api/containers');
-      if (!response.ok) throw new Error('Failed to fetch containers');
       const data = await response.json();
-      setContainers(data);
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      setContainers(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
       setContainers([]);
@@ -32,8 +34,9 @@ export default function ContainersPage() {
   }, []);
 
   async function handleStop(name) {
+    if (!name) return;
     try {
-      await fetch(`/api/containers/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      await fetch(`/api/containers?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
       loadContainers();
     } catch {}
   }
@@ -52,11 +55,14 @@ export default function ContainersPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          {error === 'Failed to fetch containers'
-            ? 'Cannot connect to Docker. Make sure Docker Desktop is running.'
-            : error
-          }
+        <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive space-y-2">
+          <p className="font-semibold">Cannot reach Docker</p>
+          <p className="text-xs text-destructive/80">{error}</p>
+          <p className="text-xs text-destructive/70">
+            Fix: in Dokploy → Advanced → Volumes, add a bind mount from
+            {' '}<code className="bg-destructive/10 px-1 rounded">/var/run/docker.sock</code> to
+            {' '}<code className="bg-destructive/10 px-1 rounded">/var/run/docker.sock</code>, then redeploy.
+          </p>
         </div>
       )}
 
