@@ -5,13 +5,14 @@ import { Button } from '../../../lib/auth/components/ui/button.jsx';
 import { Input } from '../../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
-import { saveTelegramConfig, removeTelegramConfig, getTelegramConfigStatus } from '../../../lib/admin/actions.js';
+import { saveTelegramConfig, removeTelegramConfig, getTelegramConfigStatus, saveTelegramWebhookUrl } from '../../../lib/admin/actions.js';
 import { CheckCircle, Loader2, MessageSquare, XCircle } from '../../../lib/icons/index.jsx';
 
 export default function TelegramPage() {
   const [botToken, setBotToken] = useState('');
   const [chatId, setChatId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [savedWebhookUrl, setSavedWebhookUrl] = useState('');
   const [connected, setConnected] = useState(false);
   const [saving, setSaving] = useState(false);
   const [registering, setRegistering] = useState(false);
@@ -21,8 +22,14 @@ export default function TelegramPage() {
     getTelegramConfigStatus().then((s) => {
       setConnected(s.configured);
       if (s.chatId) setChatId(s.chatId);
+      if (s.webhookUrl) {
+        setWebhookUrl(s.webhookUrl);
+        setSavedWebhookUrl(s.webhookUrl);
+      }
     }).catch(() => {});
   }, []);
+
+  const webhookLockedIn = !!savedWebhookUrl && savedWebhookUrl === webhookUrl;
 
   async function handleConnect() {
     if (!botToken.trim()) return;
@@ -64,14 +71,23 @@ export default function TelegramPage() {
         body: JSON.stringify({ webhookUrl }),
       });
       const data = await res.json();
-      setResult(data.success
-        ? { type: 'success', message: 'Webhook registered! Your bot is now live.' }
-        : { type: 'error', message: data.error || 'Registration failed' },
-      );
+      if (data.success) {
+        await saveTelegramWebhookUrl(webhookUrl);
+        setSavedWebhookUrl(webhookUrl);
+        setResult({ type: 'success', message: 'Webhook registered! Your bot is now live.' });
+      } else {
+        setResult({ type: 'error', message: data.error || 'Registration failed' });
+      }
     } catch (err) {
       setResult({ type: 'error', message: err.message });
     }
     setRegistering(false);
+  }
+
+  async function handleUnregisterWebhook() {
+    await saveTelegramWebhookUrl('');
+    setSavedWebhookUrl('');
+    setWebhookUrl('');
   }
 
   return (
@@ -139,20 +155,42 @@ export default function TelegramPage() {
 
       {/* Webhook Registration — only show when connected */}
       {connected && (
-        <Card>
+        <Card className={webhookLockedIn ? 'border-primary/30' : ''}>
           <CardHeader>
-            <CardTitle className="text-lg">Webhook Registration</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Webhook Registration</CardTitle>
+              {webhookLockedIn && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  Active
+                </span>
+              )}
+            </div>
             <CardDescription>Tell Telegram where to send messages. Required for your bot to receive messages.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Public URL</Label>
-              <Input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://your-domain.com" />
-              <p className="text-xs text-muted-foreground">Must be HTTPS. The path <code className="bg-muted px-1 rounded">/api/telegram/webhook</code> is added automatically.</p>
-            </div>
-            <Button onClick={handleRegister} disabled={registering || !webhookUrl.trim()} variant="outline">
-              {registering ? <><Loader2 className="h-4 w-4 mr-2" /> Registering...</> : 'Register Webhook'}
-            </Button>
+            {webhookLockedIn ? (
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Webhook</div>
+                  <div className="text-sm font-mono text-foreground truncate">{savedWebhookUrl}/api/telegram/webhook</div>
+                </div>
+                <Button onClick={handleUnregisterWebhook} size="sm" variant="destructive">
+                  Clear
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Public URL</Label>
+                  <Input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://ghostbot.dev" />
+                  <p className="text-xs text-muted-foreground">Must be HTTPS. The path <code className="bg-muted px-1 rounded">/api/telegram/webhook</code> is added automatically.</p>
+                </div>
+                <Button onClick={handleRegister} disabled={registering || !webhookUrl.trim()} variant="outline">
+                  {registering ? <><Loader2 className="h-4 w-4 mr-2" /> Registering...</> : 'Register Webhook'}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

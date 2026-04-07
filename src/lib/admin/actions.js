@@ -164,7 +164,16 @@ export async function getTelegramConfigStatus() {
   await requireAdmin();
   const token = getConfigSecret('TELEGRAM_BOT_TOKEN');
   const chatIdVal = getConfig('TELEGRAM_CHAT_ID');
-  return { configured: !!token, chatId: chatIdVal || '' };
+  const webhookUrl = getConfig('TELEGRAM_WEBHOOK_URL');
+  return { configured: !!token, chatId: chatIdVal || '', webhookUrl: webhookUrl || '' };
+}
+
+export async function saveTelegramWebhookUrl(url) {
+  await requireAdmin();
+  const clean = (url || '').replace(/\/+$/, '');
+  setConfig('TELEGRAM_WEBHOOK_URL', clean);
+  invalidateConfigCache('TELEGRAM_WEBHOOK_URL');
+  return { success: true };
 }
 
 export async function getSettings() {
