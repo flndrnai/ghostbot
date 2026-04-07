@@ -16,6 +16,7 @@ const tabs = [
   { href: '/admin/containers', label: 'Containers' },
   { href: '/admin/monitoring', label: 'Monitoring' },
   { href: '/admin/memory', label: 'Memory' },
+  { href: '/admin/backup', label: 'Backup' },
 ];
 
 export function AdminNav() {

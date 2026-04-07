@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { Greeting } from './greeting.jsx';
 import { ThinkingMessage } from './thinking-message.jsx';
+import { Markdown } from './markdown.jsx';
 
 function JobCard({ job }) {
   const color =
@@ -80,13 +81,17 @@ export function Messages({ messages = [], isLoading = false, onSuggestion, jobs 
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-primary/10 text-foreground border border-primary/10'
+                  ? 'bg-primary/10 text-foreground border border-primary/10 whitespace-pre-wrap'
                   : 'bg-muted/60 text-foreground'
               }`}
             >
-              {msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''}
+              {msg.role === 'assistant' ? (
+                <Markdown>{msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''}</Markdown>
+              ) : (
+                msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''
+              )}
             </div>
           </div>
         ))}
