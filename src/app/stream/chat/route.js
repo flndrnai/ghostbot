@@ -24,7 +24,7 @@ export async function POST(request) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const generator = chatStream(chatId, session.user.id, userText.trim());
+        const generator = chatStream(chatId, session.user.id, userText.trim(), messages);
 
         // AI SDK data stream protocol v2
         // Format: "{prefix}:{JSON}\n"

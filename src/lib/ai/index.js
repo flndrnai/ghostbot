@@ -1,14 +1,22 @@
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { getAgent } from './agent.js';
+import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
 import { createModel } from './model.js';
 import { TokenCounter } from './token-counter.js';
 import { getConfig } from '../config.js';
-import { getChatById, createChat, saveMessage, updateChatTitle } from '../db/chats.js';
+import { getChatById, createChat, saveMessage, updateChatTitle, getMessagesByChatId } from '../db/chats.js';
 import { recordTokenUsage } from '../db/token-usage.js';
 
-const STREAM_TIMEOUT_MS = 30000;
+const STREAM_TIMEOUT_MS = 60000;
+const MAX_HISTORY_MESSAGES = 30;
 
-export async function* chatStream(chatId, userId, userMessage) {
+function toLangchainMessages(history) {
+  return history.map((m) => {
+    if (m.role === 'user') return new HumanMessage(m.content);
+    if (m.role === 'assistant') return new AIMessage(m.content);
+    return new SystemMessage(m.content);
+  });
+}
+
+export async function* chatStream(chatId, userId, userMessage, clientHistory = null) {
   let chat = getChatById(chatId);
   if (!chat) {
     createChat(userId, 'New Chat', chatId);
@@ -18,11 +26,30 @@ export async function* chatStream(chatId, userId, userMessage) {
 
   const systemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
 
-  let agent;
+  // Build message history. Prefer client-provided history (already includes the new user msg);
+  // fall back to DB history for resilience.
+  let history;
+  if (Array.isArray(clientHistory) && clientHistory.length > 0) {
+    history = clientHistory.slice(-MAX_HISTORY_MESSAGES);
+  } else {
+    const dbMessages = getMessagesByChatId(chatId) || [];
+    history = dbMessages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m) => ({ role: m.role, content: m.content }));
+    if (!history.length || history[history.length - 1]?.content !== userMessage) {
+      history.push({ role: 'user', content: userMessage });
+    }
+  }
+
+  const messages = [new SystemMessage(systemPrompt), ...toLangchainMessages(history)];
+
+  // Build a fresh model per request so config changes apply instantly.
+  let model;
   try {
-    agent = await getAgent();
+    model = await createModel();
   } catch (error) {
-    yield { type: 'error', content: `Failed to initialize AI agent: ${error.message}. Check your LLM configuration in Admin > LLM Providers.` };
+    yield { type: 'error', content: `Failed to initialize LLM: ${error.message}. Check Admin > LLM Providers.` };
     return;
   }
 
@@ -30,48 +57,31 @@ export async function* chatStream(chatId, userId, userMessage) {
   let fullContent = '';
 
   try {
-    // Race stream against timeout to avoid hanging when LLM is unreachable
-    const streamPromise = agent.stream(
-      {
-        messages: [
-          new SystemMessage(systemPrompt),
-          new HumanMessage(userMessage),
-        ],
-      },
-      {
-        configurable: { thread_id: chatId },
-        callbacks: [tokenCounter],
-        streamMode: 'messages',
-      },
-    );
-
+    const streamPromise = model.stream(messages, { callbacks: [tokenCounter] });
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Connection to LLM timed out. Make sure your LLM provider is running and configured correctly in Admin settings.')), STREAM_TIMEOUT_MS),
+      setTimeout(() => reject(new Error('Connection to LLM timed out. Verify your provider is reachable in Admin settings.')), STREAM_TIMEOUT_MS),
     );
 
     const stream = await Promise.race([streamPromise, timeoutPromise]);
 
-    for await (const [chunk] of stream) {
-      if (chunk.content) {
-        const text = typeof chunk.content === 'string'
-          ? chunk.content
-          : chunk.content
-              .filter((c) => c.type === 'text')
-              .map((c) => c.text)
-              .join('');
-
-        if (text) {
-          fullContent += text;
-          yield { type: 'text-delta', content: text };
-        }
+    for await (const chunk of stream) {
+      const raw = chunk?.content;
+      if (!raw) continue;
+      const text = typeof raw === 'string'
+        ? raw
+        : Array.isArray(raw)
+          ? raw.filter((c) => c.type === 'text').map((c) => c.text).join('')
+          : '';
+      if (text) {
+        fullContent += text;
+        yield { type: 'text-delta', content: text };
       }
     }
   } catch (error) {
     const msg = error.message || 'An error occurred while generating a response.';
-    // Make common errors more user-friendly
     let errorMsg = msg;
-    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-      errorMsg = 'Cannot connect to LLM. If using Ollama, make sure it is running. Configure your provider in Admin > LLM Providers.';
+    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed') || msg.includes('ENOTFOUND')) {
+      errorMsg = 'Cannot connect to LLM. If using Ollama, verify the URL in Admin > Ollama Setup is reachable from this server.';
     }
     yield { type: 'error', content: errorMsg };
     fullContent = `Error: ${errorMsg}`;
