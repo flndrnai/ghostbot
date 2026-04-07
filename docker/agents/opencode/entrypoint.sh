@@ -64,11 +64,34 @@ export OPENAI_BASE_URL
 export OPENAI_API_KEY
 export OPENCODE_MODEL="${MODEL}"
 
+log "writing OpenCode config..."
+# OpenCode reads provider config from ~/.config/opencode/opencode.json.
+# We define a custom 'ollama' provider pointing at the user's Ollama
+# endpoint and explicitly register the chosen model so OpenCode's
+# model registry recognizes it.
+mkdir -p /root/.config/opencode
+cat > /root/.config/opencode/opencode.json <<JSON
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (GhostBot)",
+      "options": {
+        "baseURL": "${OPENAI_BASE_URL}"
+      },
+      "models": {
+        "${MODEL}": {
+          "name": "${MODEL}"
+        }
+      }
+    }
+  }
+}
+JSON
+
 log "running OpenCode in headless mode..."
-# OpenCode 'run' takes the prompt as a positional arg and uses
-# provider/model format for -m. We pass openai/<model> so it
-# routes through the OPENAI_BASE_URL we set above (Ollama).
-opencode run -m "openai/${MODEL}" "${PROMPT}" || {
+opencode run -m "ollama/${MODEL}" "${PROMPT}" || {
   log "OpenCode exited non-zero — capturing diff anyway"
 }
 
