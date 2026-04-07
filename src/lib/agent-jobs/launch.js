@@ -14,7 +14,9 @@ import {
   createAgentJob,
   updateAgentJob,
   appendAgentJobOutput,
+  getAgentJob,
 } from './db.js';
+import { notifyAgentJob } from './notify.js';
 
 export async function launchAgentJob({
   chatId = null,
@@ -77,6 +79,7 @@ export async function launchAgentJob({
       error: err?.message || String(err),
       completedAt: Date.now(),
     });
+    notifyAgentJob('failed', getAgentJob(jobId)).catch(() => {});
   });
 
   return jobId;
@@ -84,6 +87,7 @@ export async function launchAgentJob({
 
 async function runJobContainer({ jobId, containerName, image, env }) {
   updateAgentJob(jobId, { status: 'running', startedAt: Date.now() });
+  notifyAgentJob('started', getAgentJob(jobId)).catch(() => {});
 
   // Ensure the image exists locally. We do NOT try to pull it — the
   // user builds agent images by hand on the VPS.
@@ -165,20 +169,22 @@ async function runJobContainer({ jobId, containerName, image, env }) {
   const exitCode = waitRes?.data?.StatusCode ?? -1;
 
   // Derive a PR URL heuristically from the output
-  const job = (await import('./db.js')).getAgentJob(jobId);
+  const jobNow = getAgentJob(jobId);
   let prUrl = null;
-  if (job?.output) {
+  if (jobNow?.output) {
     // If the agent pushed a branch, GitHub returns a compare link in the push output
-    const match = job.output.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/(?:pull\/new|compare)\/[^\s]+/);
+    const match = jobNow.output.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/(?:pull\/new|compare)\/[^\s]+/);
     if (match) prUrl = match[0];
   }
 
+  const finalStatus = exitCode === 0 ? 'succeeded' : 'failed';
   updateAgentJob(jobId, {
-    status: exitCode === 0 ? 'succeeded' : 'failed',
+    status: finalStatus,
     error: exitCode === 0 ? null : `Container exited with code ${exitCode}`,
     prUrl,
     completedAt: Date.now(),
   });
+  notifyAgentJob(finalStatus, getAgentJob(jobId)).catch(() => {});
 
   // Clean up the container (best effort)
   try {
