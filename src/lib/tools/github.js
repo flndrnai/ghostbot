@@ -68,6 +68,38 @@ export async function createPullRequest(repoFullName, { title, body, head, base 
   });
 }
 
+export async function getBranchDiff(repoFullName, baseBranch, headBranch) {
+  // GET /repos/{owner}/{repo}/compare/{base}...{head}
+  const path = `/repos/${repoFullName}/compare/${encodeURIComponent(baseBranch)}...${encodeURIComponent(headBranch)}`;
+  const data = await githubApi(path);
+  return {
+    aheadBy: data.ahead_by,
+    behindBy: data.behind_by,
+    totalCommits: data.total_commits,
+    files: (data.files || []).map((f) => ({
+      filename: f.filename,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+      changes: f.changes,
+      patch: f.patch || '',
+      blobUrl: f.blob_url,
+    })),
+    htmlUrl: data.html_url,
+  };
+}
+
+export async function postPullRequestComment(repoFullName, prNumber, body) {
+  return githubApi(`/repos/${repoFullName}/issues/${prNumber}/comments`, {
+    method: 'POST',
+    body: { body },
+  });
+}
+
+export async function getPullRequest(repoFullName, prNumber) {
+  return githubApi(`/repos/${repoFullName}/pulls/${prNumber}`);
+}
+
 export async function testGitHubConnection() {
   try {
     const user = await githubApi('/user');

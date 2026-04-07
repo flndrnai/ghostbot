@@ -9,6 +9,11 @@ export function getUserCount() {
   return result?.count ?? 0;
 }
 
+export function getFirstAdminUser() {
+  const db = getDb();
+  return db.select().from(users).where(eq(users.role, 'admin')).get();
+}
+
 export function getUserByEmail(email) {
   const db = getDb();
   return db

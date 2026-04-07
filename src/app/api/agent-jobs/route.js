@@ -1,6 +1,6 @@
 import { auth } from '../../../lib/auth/config.js';
 import { launchAgentJob } from '../../../lib/agent-jobs/launch.js';
-import { listAgentJobsByChat, listAgentJobsByUser } from '../../../lib/agent-jobs/db.js';
+import { listAgentJobsByChat, listAgentJobsByUser, getAgentJob } from '../../../lib/agent-jobs/db.js';
 
 export async function POST(request) {
   const session = await auth();
@@ -13,6 +13,26 @@ export async function POST(request) {
     body = await request.json();
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // Re-run an existing job: POST { rerun: '<jobId>' }
+  if (body?.rerun) {
+    const old = getAgentJob(body.rerun);
+    if (!old || old.userId !== session.user.id) {
+      return Response.json({ error: 'Job not found' }, { status: 404 });
+    }
+    try {
+      const jobId = await launchAgentJob({
+        chatId: old.chatId,
+        userId: session.user.id,
+        prompt: old.prompt,
+        agent: old.agent,
+        baseBranch: old.baseBranch,
+      });
+      return Response.json({ success: true, jobId, rerunOf: old.id });
+    } catch (err) {
+      return Response.json({ error: err?.message || 'Failed to re-run' }, { status: 500 });
+    }
   }
 
   const { chatId = null, prompt, agent = 'aider', baseBranch = 'main' } = body || {};
