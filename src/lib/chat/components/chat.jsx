@@ -19,11 +19,14 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Sync initial messages when chat ID changes
+  // Sync initial messages ONLY when the chat ID actually changes,
+  // not when initialMessages reference changes (parent re-renders create
+  // a new [] every time and would wipe streamed-in messages).
   useEffect(() => {
     setMessages(sanitizeMessages(initialMessages));
     chatIdRef.current = initialChatId || null;
-  }, [initialChatId, initialMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialChatId]);
 
   const handleSend = useCallback(
     async (text) => {
