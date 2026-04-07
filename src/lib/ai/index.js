@@ -6,6 +6,8 @@ import { TokenCounter } from './token-counter.js';
 import { getConfig } from '../config.js';
 import { getChatById, createChat, saveMessage, updateChatTitle, getMessagesByChatId } from '../db/chats.js';
 import { recordTokenUsage } from '../db/token-usage.js';
+import { searchChatSummaries } from '../memory/store.js';
+import { summarizeChat } from '../memory/summarize.js';
 
 const FIRST_TOKEN_TIMEOUT_MS = 120000;  // 2 min for cold model
 const MAX_HISTORY_MESSAGES = 30;
@@ -54,8 +56,33 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
       setConfig('LLM_MODEL', model);
     }
   }
-  const systemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
+  const baseSystemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
   const temperature = parseFloat(getConfig('TEMPERATURE') || '0.7');
+
+  // ========= MEMORY RETRIEVAL (RAG) =========
+  // On the first message of a new chat, search past chat summaries
+  // for semantically relevant context and inject it into the system
+  // prompt. Fire-and-forget: failures never block the chat.
+  let systemPrompt = baseSystemPrompt;
+  const dbMessagesCount = (getMessagesByChatId(chatId) || []).length;
+  const isFirstMessage = dbMessagesCount <= 1; // only the user msg we just saved
+  if (isFirstMessage) {
+    try {
+      const relevant = await searchChatSummaries(userMessage, { userId, topK: 3, minScore: 0.45 });
+      if (relevant.length > 0) {
+        const contextBlock = relevant
+          .map((s, i) => {
+            const topics = (() => { try { return JSON.parse(s.keyTopics || '[]').join(', '); } catch { return ''; } })();
+            return `[Memory ${i + 1}${topics ? ` — ${topics}` : ''}] ${s.summary}`;
+          })
+          .join('\n');
+        systemPrompt = `${baseSystemPrompt}\n\nRelevant context from previous conversations:\n${contextBlock}\n\nUse this context if relevant; otherwise ignore it.`;
+        console.log('[chatStream] injected', relevant.length, 'memory summaries');
+      }
+    } catch (err) {
+      console.error('[chatStream] memory retrieval failed:', err.message);
+    }
+  }
 
   const history = buildHistory(clientHistory, chatId, userMessage);
   const messagesForLLM = [{ role: 'system', content: systemPrompt }, ...history];
@@ -170,6 +197,22 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   chat = getChatById(chatId);
   if (chat && chat.title === 'New Chat' && fullContent && !fullContent.startsWith('Error:')) {
     autoTitle(chatId, userMessage).catch(() => {});
+  }
+
+  // Auto-summarize the chat in the background once we have at least
+  // one full user+assistant exchange. This writes to chat_summaries
+  // with an embedding so future chats can retrieve the context.
+  if (fullContent && !fullContent.startsWith('Error:')) {
+    (async () => {
+      try {
+        const fullHistory = getMessagesByChatId(chatId) || [];
+        if (fullHistory.length >= 2) {
+          await summarizeChat({ chatId, userId, messages: fullHistory });
+        }
+      } catch (err) {
+        console.error('[chatStream] auto-summarize failed:', err.message);
+      }
+    })();
   }
 }
 

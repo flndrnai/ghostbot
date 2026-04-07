@@ -100,11 +100,14 @@ export const settings = sqliteTable('settings', {
 // GhostBot-specific: Knowledge base for RAG
 export const knowledgeEntries = sqliteTable('knowledge_entries', {
   id: text('id').primaryKey(),
-  sourceType: text('source_type').notNull(), // 'chat', 'agent_job', 'manual', 'code'
+  userId: text('user_id'),              // which user owns this entry (null = global)
+  sourceType: text('source_type').notNull(), // 'chat', 'agent_job', 'manual', 'code', 'summary'
   sourceId: text('source_id'),
   title: text('title').notNull(),
   content: text('content').notNull(),
-  metadata: text('metadata'), // JSON: topics, language, file paths, etc.
+  embedding: text('embedding'),         // JSON array of floats (Ollama nomic-embed-text = 768 dims)
+  embeddingModel: text('embedding_model'), // e.g. 'nomic-embed-text'
+  metadata: text('metadata'),           // JSON: topics, language, file paths, etc.
   createdAt: integer('created_at').notNull(),
 });
 
@@ -125,7 +128,29 @@ export const tokenUsage = sqliteTable('token_usage', {
 export const chatSummaries = sqliteTable('chat_summaries', {
   id: text('id').primaryKey(),
   chatId: text('chat_id').notNull(),
+  userId: text('user_id'),              // redundant but lets us query without joining chats
   summary: text('summary').notNull(),
   keyTopics: text('key_topics').notNull(), // JSON array of topic strings
+  embedding: text('embedding'),         // JSON array of floats
+  embeddingModel: text('embedding_model'),
   createdAt: integer('created_at').notNull(),
+});
+
+export const agentJobs = sqliteTable('agent_jobs', {
+  id: text('id').primaryKey(),
+  chatId: text('chat_id'),              // optional — jobs can be standalone
+  userId: text('user_id').notNull(),
+  agent: text('agent').notNull(),       // 'aider' | 'opencode' | etc.
+  image: text('image').notNull(),       // docker image tag
+  prompt: text('prompt').notNull(),
+  repo: text('repo').notNull(),         // owner/repo
+  baseBranch: text('base_branch').notNull(),
+  branch: text('branch').notNull(),     // agent-job/xxx
+  status: text('status').notNull(),     // pending|running|succeeded|failed|cancelled
+  output: text('output'),               // accumulated container stdout+stderr
+  error: text('error'),                 // error message on failure
+  prUrl: text('pr_url'),                // link if a PR was opened
+  createdAt: integer('created_at').notNull(),
+  startedAt: integer('started_at'),
+  completedAt: integer('completed_at'),
 });
