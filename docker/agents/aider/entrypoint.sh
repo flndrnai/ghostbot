@@ -55,12 +55,33 @@ git checkout -b "${GH_BRANCH}"
 log "checked out new branch ${GH_BRANCH}"
 
 # ============================================================
-# 2. Run Aider
+# 2. Pre-warm the Ollama model
+# ============================================================
+# Cold-loading qwen2.5-coder:14b takes 30-60s. If we let Aider
+# send its first request before the model is in RAM, the HTTP
+# client times out with "Connection closed". Pre-warming with a
+# tiny request loads the model and makes it stay resident
+# (default OLLAMA_KEEP_ALIVE=5m).
+log "pre-warming model ${MODEL} (this can take 30-60s on first call)..."
+curl -sS --max-time 300 \
+  "${OLLAMA_BASE_URL}/api/generate" \
+  -H "Content-Type: application/json" \
+  -d "{\"model\": \"${MODEL}\", \"prompt\": \"hi\", \"stream\": false, \"keep_alive\": \"30m\"}" \
+  > /dev/null \
+  && log "model warmed and resident in RAM" \
+  || log "WARNING: pre-warm failed, Aider may also fail"
+
+# ============================================================
+# 3. Run Aider
 # ============================================================
 # Aider uses LiteLLM under the hood. For Ollama, it expects:
 #   - model:    ollama/<model-name>
 #   - env var:  OLLAMA_API_BASE  (NOT OLLAMA_BASE_URL)
 export OLLAMA_API_BASE="${OLLAMA_BASE_URL}"
+# Generous request timeout — Qwen 14b on CPU is slow per token,
+# and a long edit can easily take 5+ minutes.
+export LITELLM_REQUEST_TIMEOUT=900
+export OPENAI_API_TIMEOUT=900
 
 log "running Aider..."
 # Flags:
@@ -88,6 +109,7 @@ if [ -n "${AIDER_FILES}" ]; then
     --no-analytics \
     --no-gitignore \
     --map-tokens 0 \
+    --timeout 900 \
     ${AIDER_FILES} \
     || log "Aider exited non-zero — checking for changes anyway"
 else
@@ -102,6 +124,7 @@ else
     --no-analytics \
     --no-gitignore \
     --map-tokens 0 \
+    --timeout 900 \
     || log "Aider exited non-zero — checking for changes anyway"
 fi
 
