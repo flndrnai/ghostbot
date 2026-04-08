@@ -9,6 +9,19 @@ export const users = sqliteTable('users', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Invitations — admin-created one-time tokens that let a new user
+// register by setting their own password.
+export const invitations = sqliteTable('invitations', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  role: text('role').notNull().default('user'),
+  invitedBy: text('invited_by').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+  acceptedAt: integer('accepted_at'),
+  createdAt: integer('created_at').notNull(),
+});
+
 export const chats = sqliteTable('chats', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),

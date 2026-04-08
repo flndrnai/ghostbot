@@ -18,6 +18,7 @@ const tabs = [
   { href: '/admin/monitoring', label: 'Monitoring' },
   { href: '/admin/memory', label: 'Memory' },
   { href: '/admin/backup', label: 'Backup' },
+  { href: '/admin/users', label: 'Users' },
 ];
 
 export function AdminNav() {

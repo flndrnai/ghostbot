@@ -80,6 +80,22 @@ function runAutoMigrations(sqlite) {
     // (default), 0 = don't embed or summarize this chat at all.
     addColumnIfMissing(sqlite, 'chats', 'memory_enabled', 'INTEGER NOT NULL DEFAULT 1');
 
+    // Multi-user: invitations table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS invitations (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        role TEXT NOT NULL DEFAULT 'user',
+        invited_by TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        accepted_at INTEGER,
+        created_at INTEGER NOT NULL
+      );
+    `);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);`);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);`);
+
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_agent_jobs_user ON agent_jobs(user_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_agent_jobs_chat ON agent_jobs(chat_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_user ON knowledge_entries(user_id);`);

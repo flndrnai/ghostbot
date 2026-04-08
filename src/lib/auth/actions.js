@@ -23,3 +23,13 @@ export async function setupAdmin(email, password) {
 
   return { success: true };
 }
+
+export async function acceptInviteAction({ token, password }) {
+  if (!token || !password) return { error: 'Missing token or password' };
+  if (password.length < 8) return { error: 'Password must be at least 8 characters' };
+
+  const { acceptInvitation } = await import('../db/users.js');
+  const result = acceptInvitation({ token, password });
+  if (result.error) return { error: result.error };
+  return { success: true, email: result.email, role: result.role };
+}

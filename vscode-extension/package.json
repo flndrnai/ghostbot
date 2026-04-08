@@ -1,0 +1,95 @@
+{
+  "name": "ghostbot-vscode",
+  "displayName": "GhostBot",
+  "description": "Open your self-hosted GhostBot chat and coding agents inside VS Code",
+  "version": "0.1.0",
+  "publisher": "flndrn",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Chat",
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "ghostbot",
+    "ollama",
+    "qwen",
+    "coding agent",
+    "self-hosted"
+  ],
+  "icon": "icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ghostbot.open",
+        "title": "GhostBot: Open",
+        "category": "GhostBot"
+      },
+      {
+        "command": "ghostbot.newChat",
+        "title": "GhostBot: New Chat",
+        "category": "GhostBot"
+      },
+      {
+        "command": "ghostbot.openInBrowser",
+        "title": "GhostBot: Open in External Browser",
+        "category": "GhostBot"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ghostbot-sidebar",
+          "title": "GhostBot",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ghostbot-sidebar": [
+        {
+          "type": "webview",
+          "id": "ghostbot.chatView",
+          "name": "Chat",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "GhostBot",
+      "properties": {
+        "ghostbot.url": {
+          "type": "string",
+          "default": "https://ghostbot.dev",
+          "description": "The URL of your GhostBot instance. Defaults to https://ghostbot.dev."
+        },
+        "ghostbot.openOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open the GhostBot panel when VS Code starts."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "ghostbot.newChat",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0"
+  }
+}

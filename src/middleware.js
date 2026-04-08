@@ -8,7 +8,11 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
 
   // Allow public routes
-  if (pathname.startsWith('/api/') || pathname === '/login') {
+  if (
+    pathname.startsWith('/api/') ||
+    pathname === '/login' ||
+    pathname.startsWith('/invite/')
+  ) {
     // Redirect logged-in users away from login page
     if (pathname === '/login' && isLoggedIn) {
       return Response.redirect(new URL('/', req.url));

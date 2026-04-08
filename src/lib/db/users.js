@@ -1,7 +1,7 @@
-import { eq, count } from 'drizzle-orm';
+import { eq, count, desc, and, isNull, gt } from 'drizzle-orm';
 import { hashSync, compareSync } from 'bcrypt-ts';
 import { getDb } from './index.js';
-import { users } from './schema.js';
+import { users, invitations } from './schema.js';
 
 export function getUserCount() {
   const db = getDb();
@@ -56,4 +56,114 @@ export function createFirstUser(email, password) {
 
 export function verifyPassword(user, password) {
   return compareSync(password, user.passwordHash);
+}
+
+// ─── Multi-user CRUD ───
+
+export function listUsers() {
+  const db = getDb();
+  return db
+    .select({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt))
+    .all();
+}
+
+export function deleteUserById(id) {
+  const db = getDb();
+  db.delete(users).where(eq(users.id, id)).run();
+}
+
+export function updateUserRole(id, role) {
+  const db = getDb();
+  const now = Date.now();
+  db.update(users).set({ role, updatedAt: now }).where(eq(users.id, id)).run();
+}
+
+// ─── Invitations ───
+
+function randomToken(len = 32) {
+  const bytes = new Uint8Array(len);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < len; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function createInvitation({ email, role = 'user', invitedBy, expiresInDays = 7 }) {
+  const db = getDb();
+  const now = Date.now();
+  const id = crypto.randomUUID();
+  const token = randomToken(32);
+  const expiresAt = now + expiresInDays * 24 * 60 * 60 * 1000;
+
+  db.insert(invitations)
+    .values({
+      id,
+      email: email.toLowerCase(),
+      token,
+      role,
+      invitedBy,
+      expiresAt,
+      acceptedAt: null,
+      createdAt: now,
+    })
+    .run();
+
+  return { id, token, expiresAt };
+}
+
+export function listInvitations() {
+  const db = getDb();
+  return db.select().from(invitations).orderBy(desc(invitations.createdAt)).all();
+}
+
+export function getInvitationByToken(token) {
+  const db = getDb();
+  return db.select().from(invitations).where(eq(invitations.token, token)).get();
+}
+
+export function deleteInvitation(id) {
+  const db = getDb();
+  db.delete(invitations).where(eq(invitations.id, id)).run();
+}
+
+export function acceptInvitation({ token, password }) {
+  const db = getDb();
+  const now = Date.now();
+
+  return db.transaction((tx) => {
+    const invite = tx.select().from(invitations).where(eq(invitations.token, token)).get();
+    if (!invite) return { error: 'Invitation not found' };
+    if (invite.acceptedAt) return { error: 'Invitation already used' };
+    if (invite.expiresAt < now) return { error: 'Invitation expired' };
+
+    // Make sure no one already registered with that email
+    const existing = tx.select().from(users).where(eq(users.email, invite.email)).get();
+    if (existing) return { error: 'A user with this email already exists' };
+
+    const id = crypto.randomUUID();
+    const passwordHash = hashSync(password, 10);
+
+    tx.insert(users).values({
+      id,
+      email: invite.email,
+      passwordHash,
+      role: invite.role || 'user',
+      createdAt: now,
+      updatedAt: now,
+    }).run();
+
+    tx.update(invitations).set({ acceptedAt: now }).where(eq(invitations.id, invite.id)).run();
+
+    return { success: true, userId: id, email: invite.email, role: invite.role };
+  });
 }
