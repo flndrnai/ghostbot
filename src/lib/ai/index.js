@@ -8,6 +8,7 @@ import { getChatById, createChat, saveMessage, updateChatTitle, getMessagesByCha
 import { recordTokenUsage } from '../db/token-usage.js';
 import { searchChatSummaries } from '../memory/store.js';
 import { summarizeChat } from '../memory/summarize.js';
+import { getChatAbortSignal } from './live-chats.js';
 
 const FIRST_TOKEN_TIMEOUT_MS = 120000;  // 2 min for cold model
 const MAX_HISTORY_MESSAGES = 30;
@@ -100,10 +101,25 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     }
     const baseUrl = getConfig('OLLAMA_BASE_URL') || 'http://localhost:11434';
 
+    // Two abort sources:
+    //   1. firstTokenTimer — fires only if no token arrives in time
+    //   2. userAbortSignal  — fires when the user clicks the Stop
+    //                         button (POST /api/chat/cancel)
     const ctrl = new AbortController();
+    let userCancelled = false;
     const firstTokenTimer = setTimeout(() => {
       if (!firstTokenReceived) ctrl.abort();
     }, FIRST_TOKEN_TIMEOUT_MS);
+
+    const userAbortSignal = getChatAbortSignal(chatId);
+    const onUserAbort = () => {
+      userCancelled = true;
+      try { ctrl.abort(); } catch {}
+    };
+    if (userAbortSignal) {
+      if (userAbortSignal.aborted) onUserAbort();
+      else userAbortSignal.addEventListener('abort', onUserAbort, { once: true });
+    }
 
     try {
       const stream = streamOllamaChat({
@@ -127,16 +143,26 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     } catch (error) {
       clearTimeout(firstTokenTimer);
       const msg = error.message || 'Unknown Ollama error';
-      let userMsg = msg;
-      if (msg.includes('aborted') || msg.includes('AbortError')) {
-        userMsg = `Ollama did not respond within ${FIRST_TOKEN_TIMEOUT_MS / 1000}s. The model may be loading — try again in a moment.`;
-      } else if (msg.includes('Cannot reach')) {
-        userMsg = `${msg}. Verify the URL in Admin > Ollama Setup is reachable from this server.`;
+      if (userCancelled) {
+        // User pressed Stop. Persist whatever text we already
+        // streamed and exit cleanly — no error frame.
+        if (fullContent) fullContent += '\n\n_(stopped)_';
+        else fullContent = '_(stopped before any response)_';
+      } else {
+        let userMsg = msg;
+        if (msg.includes('aborted') || msg.includes('AbortError')) {
+          userMsg = `Ollama did not respond within ${FIRST_TOKEN_TIMEOUT_MS / 1000}s. The model may be loading — try again in a moment.`;
+        } else if (msg.includes('Cannot reach')) {
+          userMsg = `${msg}. Verify the URL in Admin > Ollama Setup is reachable from this server.`;
+        }
+        yield { type: 'error', content: userMsg };
+        fullContent = `Error: ${userMsg}`;
       }
-      yield { type: 'error', content: userMsg };
-      fullContent = `Error: ${userMsg}`;
     } finally {
       clearTimeout(firstTokenTimer);
+      if (userAbortSignal) {
+        try { userAbortSignal.removeEventListener('abort', onUserAbort); } catch {}
+      }
     }
   } else {
     // ========= CLOUD PROVIDERS (LangChain) =========

@@ -33,6 +33,7 @@ export function ChatInput(props) {
   const input = props.input || '';
   const onInputChange = props.onInputChange;
   const onSend = props.onSend;
+  const onStop = props.onStop;
   const isLoading = props.isLoading || false;
   const agentMode = !!props.agentMode;
   const onToggleMode = props.onToggleMode;
@@ -197,22 +198,29 @@ export function ChatInput(props) {
             >
               {agentMode ? <Wrench className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
             </button>
-            <button
-              type="submit"
-              disabled={!hasValue || isLoading}
-              className={`
-                absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center
-                rounded-xl transition-all duration-200 cursor-pointer
-                ${isLoading
-                  ? 'bg-destructive/80 text-destructive-foreground hover:bg-destructive'
-                  : hasValue
+            {isLoading ? (
+              <button
+                type="button"
+                onClick={() => { if (typeof onStop === 'function') onStop(); }}
+                aria-label="Stop generating"
+                className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/80 text-destructive-foreground hover:bg-destructive transition-all duration-200 cursor-pointer active:scale-95"
+              >
+                <Square className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!hasValue}
+                aria-label="Send message"
+                className={`absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                  hasValue
                     ? 'bg-primary text-primary-foreground shadow-[0_0_16px_rgba(212,175,55,0.2)] hover:shadow-[0_0_24px_rgba(212,175,55,0.3)] active:scale-95'
                     : 'bg-muted text-muted-foreground/30'
-                }
-              `}
-            >
-              {isLoading ? <Square className="h-3.5 w-3.5" /> : <ArrowUp className="h-4 w-4" />}
-            </button>
+                }`}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </form>
         {attachmentError && (

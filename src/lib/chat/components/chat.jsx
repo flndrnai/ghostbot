@@ -112,6 +112,20 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
     return registerMessageHandler(initialChatId, handler);
   }, [initialChatId, registerMessageHandler]);
 
+  const handleStop = useCallback(async () => {
+    const id = chatIdRef.current;
+    if (!id) return;
+    try {
+      await fetch('/api/chat/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: id }),
+      });
+    } catch {}
+    // The server will publish chat:streaming-end on the SSE bus
+    // which clears serverStreaming and the thinking dots.
+  }, []);
+
   const handleAgentJob = useCallback(
     async (prompt) => {
       setError(null);
@@ -281,6 +295,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
         input={localInput}
         onInputChange={setLocalInput}
         onSend={handleSend}
+        onStop={handleStop}
         isLoading={isLoading || serverStreaming}
         agentMode={agentMode}
         onToggleMode={setAgentMode}
