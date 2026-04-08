@@ -164,6 +164,9 @@ export function SidebarHistory() {
   const { open } = useSidebar();
   const pathname = usePathname();
   const [chats, setChats] = useState([]);
+  // Bump every 30s so the relative timestamps (now / X min ago)
+  // tick over without needing a full data refetch.
+  const [, setNowTick] = useState(0);
 
   const activeChatId = pathname?.startsWith('/chat/') ? pathname.split('/')[2] : null;
 
@@ -173,6 +176,12 @@ export function SidebarHistory() {
       .then(setChats)
       .catch(() => {});
   }, [refreshKey]);
+
+  // 30-second tick to live-update relative timestamp labels
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   if (chats.length === 0) {
     return open ? (

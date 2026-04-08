@@ -36,13 +36,21 @@ export function formatDateTime(input) {
 }
 
 // Relative-ish for chat sidebar:
+//   now                 (< 60 seconds)
+//   7 min ago           (< 60 minutes)
 //   Today · HH:MM
 //   Yesterday · HH:MM
-//   dd/mm/yyyy · HH:MM   (older)
+//   dd/mm/yyyy · HH:MM  (older)
 export function formatChatTimestamp(input) {
   const d = toDate(input);
   if (!d || isNaN(d.getTime())) return '';
   const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+
   const sameDay = d.toDateString() === now.toDateString();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
