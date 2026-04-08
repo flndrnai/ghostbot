@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '../../lib/auth/components/ui/button.jsx';
 import { Input } from '../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../lib/auth/components/ui/card.jsx';
 import { CheckCircle, XCircle, Loader2, Pencil } from '../../lib/icons/index.jsx';
 import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
+import { useChatNav } from '../../lib/chat/components/chat-nav-context.jsx';
 import { getMyProfile, saveMyProfile } from '../../lib/profile/actions.js';
 import { formatDate } from '../../lib/date-format.js';
 
@@ -67,36 +68,47 @@ async function fileToAvatarDataUrl(file, target = 320) {
 }
 
 export function ProfileContent() {
+  // `profile` is the only source of truth for what's persisted on the
+  // server. Locked rows ALWAYS read from `profile.*`. Editor inputs
+  // copy from `profile.*` into local draft state when they open and
+  // write back via a re-fetch when the save round-trips. This means
+  // nothing the editor does (typing, cancelling, partial saves) can
+  // ever clear the locked view.
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [country, setCountry] = useState('');
-  const [avatarDataUrl, setAvatarDataUrl] = useState('');
+  // Editor draft state — only used while a card is in edit mode.
+  const [draftFirstName, setDraftFirstName] = useState('');
+  const [draftLastName, setDraftLastName] = useState('');
+  const [draftCountry, setDraftCountry] = useState('');
+  const [draftAvatarDataUrl, setDraftAvatarDataUrl] = useState('');
 
-  // Per-card edit mode toggles. The cards open in read mode and
-  // flip to edit mode only when the user clicks the pencil.
+  // Per-card edit mode toggles. Cards open locked; pencil flips to edit.
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState(false);
 
   const fileInputRef = useRef(null);
+  const { registerProfileHandler } = useChatNav();
 
-  useEffect(() => {
-    getMyProfile()
-      .then((p) => {
-        if (!p) return;
-        setProfile(p);
-        setFirstName(p.firstName || '');
-        setLastName(p.lastName || '');
-        setCountry(p.country || '');
-        setAvatarDataUrl(p.avatarDataUrl || '');
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const reload = useCallback(async () => {
+    try {
+      const p = await getMyProfile();
+      if (p) setProfile(p);
+    } catch {}
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    reload().finally(() => setLoading(false));
+  }, [reload]);
+
+  // Live refresh when ANY device (including this one) updates the profile.
+  useEffect(() => {
+    if (!registerProfileHandler) return;
+    return registerProfileHandler(() => { reload(); });
+  }, [registerProfileHandler, reload]);
 
   async function handleAvatarFile(e) {
     const file = e.target.files?.[0];
@@ -118,7 +130,7 @@ export function ProfileContent() {
         });
         return;
       }
-      setAvatarDataUrl(next);
+      setDraftAvatarDataUrl(next);
     } catch (err) {
       setMsg({ type: 'error', text: err?.message || 'Failed to read image' });
     } finally {
@@ -127,19 +139,29 @@ export function ProfileContent() {
   }
 
   function handleClearAvatar() {
-    setAvatarDataUrl('');
+    setDraftAvatarDataUrl('');
+  }
+
+  function openIdentityEditor() {
+    setDraftFirstName(profile?.firstName || '');
+    setDraftLastName(profile?.lastName || '');
+    setDraftCountry(profile?.country || '');
+    setEditingIdentity(true);
+    setMsg(null);
   }
 
   function cancelIdentity() {
-    setFirstName(profile?.firstName || '');
-    setLastName(profile?.lastName || '');
-    setCountry(profile?.country || '');
     setEditingIdentity(false);
     setMsg(null);
   }
 
+  function openAvatarEditor() {
+    setDraftAvatarDataUrl(profile?.avatarDataUrl || '');
+    setEditingAvatar(true);
+    setMsg(null);
+  }
+
   function cancelAvatar() {
-    setAvatarDataUrl(profile?.avatarDataUrl || '');
     setEditingAvatar(false);
     setMsg(null);
   }
@@ -147,10 +169,14 @@ export function ProfileContent() {
   async function handleSaveIdentity() {
     setSaving(true);
     setMsg(null);
-    const r = await saveMyProfile({ firstName, lastName, country });
+    const r = await saveMyProfile({
+      firstName: draftFirstName,
+      lastName: draftLastName,
+      country: draftCountry,
+    });
     if (r.success) {
       setMsg({ type: 'success', text: 'Identity saved' });
-      setProfile((p) => ({ ...p, firstName, lastName, country }));
+      setProfile((p) => ({ ...p, firstName: draftFirstName, lastName: draftLastName, country: draftCountry }));
       setEditingIdentity(false);
     } else {
       setMsg({ type: 'error', text: r.error || 'Failed to save' });
@@ -161,10 +187,10 @@ export function ProfileContent() {
   async function handleSaveAvatar() {
     setSaving(true);
     setMsg(null);
-    const r = await saveMyProfile({ avatarDataUrl });
+    const r = await saveMyProfile({ avatarDataUrl: draftAvatarDataUrl });
     if (r.success) {
       setMsg({ type: 'success', text: 'Avatar saved' });
-      setProfile((p) => ({ ...p, avatarDataUrl }));
+      setProfile((p) => ({ ...p, avatarDataUrl: draftAvatarDataUrl }));
       setEditingAvatar(false);
     } else {
       setMsg({ type: 'error', text: r.error || 'Failed to save' });
@@ -173,7 +199,8 @@ export function ProfileContent() {
   }
 
   const initial = (profile?.email || 'U').charAt(0).toUpperCase();
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ');
+  const persistedAvatar = profile?.avatarDataUrl || '';
 
   return (
     <div className="h-[100dvh] md:h-[calc(100vh-1px)] overflow-y-auto">
@@ -208,7 +235,7 @@ export function ProfileContent() {
                   {!editingAvatar && (
                     <button
                       type="button"
-                      onClick={() => { setEditingAvatar(true); setMsg(null); }}
+                      onClick={openAvatarEditor}
                       className="group inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
                       aria-label="Edit avatar"
                     >
@@ -219,11 +246,11 @@ export function ProfileContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!editingAvatar ? (
-                  // ── Locked view ──
+                  // ── Locked view (always reads from persisted profile) ──
                   <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                    {avatarDataUrl ? (
+                    {persistedAvatar ? (
                       <img
-                        src={avatarDataUrl}
+                        src={persistedAvatar}
                         alt=""
                         className="h-12 w-12 rounded-full object-cover border border-border/60 flex-shrink-0"
                       />
@@ -235,18 +262,18 @@ export function ProfileContent() {
                     <div className="flex-1 min-w-0">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Avatar</div>
                       <div className="text-sm text-foreground">
-                        {avatarDataUrl ? 'Custom image' : 'Default initial tile'}
+                        {persistedAvatar ? 'Custom image' : 'Default initial tile'}
                       </div>
                     </div>
                     <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
                   </div>
                 ) : (
-                  // ── Edit view ──
+                  // ── Edit view (uses draftAvatarDataUrl) ──
                   <>
                     <div className="flex items-center gap-5">
-                      {avatarDataUrl ? (
+                      {draftAvatarDataUrl ? (
                         <img
-                          src={avatarDataUrl}
+                          src={draftAvatarDataUrl}
                           alt="Avatar preview"
                           className="h-24 w-24 rounded-full object-cover border border-border/60"
                         />
@@ -266,7 +293,7 @@ export function ProfileContent() {
                         <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm">
                           Upload image
                         </Button>
-                        {avatarDataUrl && (
+                        {draftAvatarDataUrl && (
                           <Button onClick={handleClearAvatar} variant="outline" size="sm">
                             Remove
                           </Button>
@@ -297,7 +324,7 @@ export function ProfileContent() {
                   {!editingIdentity && (
                     <button
                       type="button"
-                      onClick={() => { setEditingIdentity(true); setMsg(null); }}
+                      onClick={openIdentityEditor}
                       className="group inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
                       aria-label="Edit identity"
                     >
@@ -308,30 +335,30 @@ export function ProfileContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {!editingIdentity ? (
-                  // ── Locked view ──
+                  // ── Locked view (always reads from persisted profile) ──
                   <div className="space-y-2">
-                    <LockedRow label="First name" value={firstName} />
-                    <LockedRow label="Last name" value={lastName} />
-                    <LockedRow label="Country" value={country} />
+                    <LockedRow label="First name" value={profile?.firstName || ''} />
+                    <LockedRow label="Last name" value={profile?.lastName || ''} />
+                    <LockedRow label="Country" value={profile?.country || ''} />
                     <LockedRow label="Email" value={profile?.email || '—'} mono />
                   </div>
                 ) : (
-                  // ── Edit view ──
+                  // ── Edit view (uses draft state) ──
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>First name</Label>
                         <Input
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
+                          value={draftFirstName}
+                          onChange={(e) => setDraftFirstName(e.target.value)}
                           placeholder="e.g. Jurgen"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Last name</Label>
                         <Input
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
+                          value={draftLastName}
+                          onChange={(e) => setDraftLastName(e.target.value)}
                           placeholder="e.g. Van Cutsem"
                         />
                       </div>
@@ -339,8 +366,8 @@ export function ProfileContent() {
                     <div className="space-y-2">
                       <Label>Country</Label>
                       <Input
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
+                        value={draftCountry}
+                        onChange={(e) => setDraftCountry(e.target.value)}
                         placeholder="e.g. Belgium"
                       />
                     </div>
