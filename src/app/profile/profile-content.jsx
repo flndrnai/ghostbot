@@ -204,6 +204,14 @@ export function ProfileContent() {
                     placeholder="e.g. Belgium"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
+                    <span className="text-sm font-mono text-foreground/90 truncate">{profile?.email || '—'}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex-shrink-0">read-only</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">The email you signed up with. Locked — contact your admin to change it.</p>
+                </div>
               </CardContent>
             </Card>
 
