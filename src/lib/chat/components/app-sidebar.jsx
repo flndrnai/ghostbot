@@ -23,6 +23,7 @@ import {
 } from './ui/sidebar.jsx';
 import { SidebarUserNav } from './sidebar-user-nav.jsx';
 import { SidebarHistory } from './sidebar-history.jsx';
+import { APP_VERSION } from '../../version.js';
 
 export function AppSidebar({ session }) {
   const router = useRouter();
@@ -147,16 +148,21 @@ export function AppSidebar({ session }) {
           </SidebarMenuItem>
         </SidebarMenu>
         {open && (
-          <a
-            href="https://flndrn.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center gap-1 text-[10px] text-muted-foreground/50 hover:text-[#fbe731] transition-colors"
-          >
-            <span>{new Date().getFullYear()} GhostBot by</span>
-            <span className="font-semibold" style={{ color: '#fbe731' }}>flndrn</span>
-            <img src="/flndrn-icon.svg" alt="flndrn" className="h-4 w-4" />
-          </a>
+          <>
+            <div className="mt-2 text-center text-[10px] text-muted-foreground/60">
+              Version <span className="font-mono text-foreground/70">{APP_VERSION}</span>
+            </div>
+            <a
+              href="https://flndrn.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground/50 hover:text-[#fbe731] transition-colors"
+            >
+              <span>{new Date().getFullYear()} GhostBot by</span>
+              <span className="font-semibold" style={{ color: '#fbe731' }}>flndrn</span>
+              <img src="/flndrn-icon.svg" alt="flndrn" className="h-4 w-4" />
+            </a>
+          </>
         )}
       </SidebarFooter>
     </Sidebar>
