@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useKeyboardShortcuts } from './use-keyboard-shortcuts.js';
 import { KeyboardShortcutsHelp } from './keyboard-shortcuts-help.jsx';
+import { useChatNav } from './chat-nav-context.jsx';
 import { MessageSquare, Settings, Plus } from '../../icons/index.jsx';
 import { Sparkles } from 'lucide-react';
 import {
@@ -27,7 +28,13 @@ export function AppSidebar({ session }) {
   const router = useRouter();
   const pathname = usePathname();
   const { open, isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+  const { streamingChatId } = useChatNav();
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // If there's a chat currently streaming on the server, the
+  // 'Chat' sidebar button should jump back into it instead of
+  // opening a fresh empty conversation.
+  const chatHref = streamingChatId ? `/chat/${streamingChatId}` : '/';
 
   const isChat = pathname === '/' || pathname?.startsWith('/chat');
   const isClusters = pathname?.startsWith('/clusters') || pathname?.startsWith('/cluster');
@@ -105,7 +112,7 @@ export function AppSidebar({ session }) {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/" isActive={isChat} tooltip="Chat" onClick={() => { if (isMobile) setOpenMobile(false); }}>
+              <SidebarMenuButton href={chatHref} isActive={isChat} tooltip={streamingChatId ? 'Resume chat (streaming)' : 'Chat'} onClick={() => { if (isMobile) setOpenMobile(false); }}>
                 <MessageSquare className="h-4 w-4" />
                 {open && 'Chat'}
               </SidebarMenuButton>

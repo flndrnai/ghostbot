@@ -11,6 +11,10 @@ const ChatNavContext = createContext({
   registerMessageHandler: () => () => {},
   registerAgentJobHandler: () => () => {},
   registerStreamingHandler: () => () => {},
+  // ID of a chat currently streaming on the server (any device).
+  // Used by the sidebar 'Chat' button to jump back into an
+  // in-progress conversation instead of opening a fresh empty one.
+  streamingChatId: null,
 });
 
 export function useChatNav() {
@@ -20,6 +24,7 @@ export function useChatNav() {
 export function ChatNavProvider({ children }) {
   const [activeChatId, setActiveChatId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [streamingChatId, setStreamingChatId] = useState(null);
 
   // Per-chat message handlers, registered by mounted Chat components.
   // Keyed by chatId so events route only to the right open conversation.
@@ -86,7 +91,13 @@ export function ChatNavProvider({ children }) {
         }
         break;
       case 'chat:streaming-start':
+        setStreamingChatId(event.chatId || null);
+        for (const h of streamingHandlersRef.current) {
+          try { h(event); } catch {}
+        }
+        break;
       case 'chat:streaming-end':
+        setStreamingChatId((current) => (current === event.chatId ? null : current));
         for (const h of streamingHandlersRef.current) {
           try { h(event); } catch {}
         }
@@ -108,6 +119,7 @@ export function ChatNavProvider({ children }) {
         registerMessageHandler,
         registerAgentJobHandler,
         registerStreamingHandler,
+        streamingChatId,
       }}
     >
       {children}
