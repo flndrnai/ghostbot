@@ -1,23 +1,22 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '../../lib/utils.js';
+import { ChevronDown } from '../../lib/icons/index.jsx';
 
-// Grouped by purpose so related items are next to each other.
-// Renders as flex-wrap rows with thin dividers between groups —
-// no horizontal scrolling, fits naturally on every viewport.
-const tabGroups = [
-  {
-    label: 'Core',
-    tabs: [
-      { href: '/admin/llms', label: 'LLM Providers' },
-      { href: '/admin/ollama', label: 'Ollama' },
-      { href: '/admin/chat', label: 'Chat' },
-      { href: '/admin/memory', label: 'Memory' },
-      { href: '/admin/agents', label: 'Agents' },
-    ],
-  },
+// Core links stay as flat row tabs.
+const coreTabs = [
+  { href: '/admin/llms', label: 'LLM Providers' },
+  { href: '/admin/ollama', label: 'Ollama' },
+  { href: '/admin/chat', label: 'Chat' },
+  { href: '/admin/memory', label: 'Memory' },
+  { href: '/admin/agents', label: 'Agents' },
+];
+
+// Everything else lives behind a dropdown button.
+const dropdownGroups = [
   {
     label: 'Integrations',
     tabs: [
@@ -44,35 +43,99 @@ const tabGroups = [
   },
 ];
 
+function NavDropdown({ group, pathname }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function onClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    function onEsc(e) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('mousedown', onClick);
+    window.addEventListener('keydown', onEsc);
+    return () => {
+      window.removeEventListener('mousedown', onClick);
+      window.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  // Close after route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const isGroupActive = group.tabs.some((t) => pathname === t.href);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex items-center gap-1 px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap border-b-2 cursor-pointer',
+          isGroupActive
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground',
+        )}
+      >
+        {group.label}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-xl border border-border/60 bg-card shadow-xl p-1">
+          {group.tabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                'block px-3 py-2 text-sm rounded-lg transition-colors',
+                pathname === tab.href
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-foreground/90 hover:bg-muted/60 hover:text-foreground',
+              )}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminNav() {
   const pathname = usePathname();
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 -mb-px">
       <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
-        {tabGroups.map((group, gi) => (
-          <div key={group.label} className="flex items-center">
-            {gi > 0 && (
-              <span
-                className="mx-2 h-5 w-px bg-border/60 hidden sm:block"
-                aria-hidden="true"
-              />
+        {/* Core flat tabs */}
+        {coreTabs.map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={cn(
+              'px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap border-b-2',
+              pathname === tab.href
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground',
             )}
-            {group.tabs.map((tab) => (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={cn(
-                  'px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap border-b-2',
-                  pathname === tab.href
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {tab.label}
-              </Link>
-            ))}
-          </div>
+          >
+            {tab.label}
+          </Link>
+        ))}
+
+        {/* Divider */}
+        <span className="mx-2 h-5 w-px bg-border/60 hidden sm:block" aria-hidden="true" />
+
+        {/* Dropdown groups */}
+        {dropdownGroups.map((g) => (
+          <NavDropdown key={g.label} group={g} pathname={pathname} />
         ))}
       </div>
     </div>
