@@ -147,7 +147,7 @@ export function ChatInput(props) {
   const hasValue = input.trim().length > 0;
 
   return (
-    <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-3 pt-3 pb-5 sm:px-6 sm:pt-5 sm:pb-10 safe-bottom">
+    <div className="bg-background/80 backdrop-blur-sm px-3 pt-3 pb-3 sm:px-6 sm:pt-5 sm:pb-3 safe-bottom">
       <div className="mx-auto max-w-3xl">
         <form onSubmit={handleSubmit}>
           <input
@@ -180,6 +180,7 @@ export function ChatInput(props) {
               rows={1}
               disabled={isLoading}
               autoComplete="off"
+              style={{ scrollbarWidth: 'none' }}
               className={`
                 w-full resize-none rounded-2xl border bg-muted/50
                 pl-14 pr-14 py-4 text-sm text-foreground leading-relaxed
@@ -187,6 +188,7 @@ export function ChatInput(props) {
                 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary/30
                 transition-all duration-200
                 disabled:opacity-60
+                [&::-webkit-scrollbar]:hidden
                 ${agentMode ? 'border-primary/40' : hasValue ? 'border-primary/20' : 'border-border/60'}
               `}
             />
