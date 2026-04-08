@@ -2,6 +2,7 @@
 
 import { auth } from '../auth/config.js';
 import { getUserById, updateUserProfile } from '../db/users.js';
+import { publish } from '../sync/bus.js';
 
 const MAX_AVATAR_BYTES = 256 * 1024; // 256 KB stored as data URL
 
@@ -58,6 +59,9 @@ export async function saveMyProfile({ firstName, lastName, country, avatarDataUr
 
   try {
     updateUserProfile(session.user.id, fields);
+    // Tell every open tab/device for this user to refresh its
+    // cached profile view (sidebar avatar, dropdown header, etc.)
+    publish(session.user.id, { type: 'profile:updated' });
     return { success: true };
   } catch (err) {
     return { success: false, error: err?.message || 'Failed to save profile' };

@@ -11,6 +11,7 @@ const ChatNavContext = createContext({
   registerMessageHandler: () => () => {},
   registerAgentJobHandler: () => () => {},
   registerStreamingHandler: () => () => {},
+  registerProfileHandler: () => () => {},
   // ID of a chat currently streaming on the server (any device).
   // Used by the sidebar 'Chat' button to jump back into an
   // in-progress conversation instead of opening a fresh empty one.
@@ -33,6 +34,8 @@ export function ChatNavProvider({ children }) {
   const agentJobHandlersRef = useRef(new Set());
   // Global chat-streaming handlers (Set of callbacks)
   const streamingHandlersRef = useRef(new Set());
+  // Global profile-update handlers (Set of callbacks)
+  const profileHandlersRef = useRef(new Set());
 
   const navigateToChat = useCallback((chatId) => {
     setActiveChatId(chatId);
@@ -65,6 +68,14 @@ export function ChatNavProvider({ children }) {
     streamingHandlersRef.current.add(handler);
     return () => {
       streamingHandlersRef.current.delete(handler);
+    };
+  }, []);
+
+  const registerProfileHandler = useCallback((handler) => {
+    if (typeof handler !== 'function') return () => {};
+    profileHandlersRef.current.add(handler);
+    return () => {
+      profileHandlersRef.current.delete(handler);
     };
   }, []);
 
@@ -102,6 +113,11 @@ export function ChatNavProvider({ children }) {
           try { h(event); } catch {}
         }
         break;
+      case 'profile:updated':
+        for (const h of profileHandlersRef.current) {
+          try { h(event); } catch {}
+        }
+        break;
       default:
         break;
     }
@@ -119,6 +135,7 @@ export function ChatNavProvider({ children }) {
         registerMessageHandler,
         registerAgentJobHandler,
         registerStreamingHandler,
+        registerProfileHandler,
         streamingChatId,
       }}
     >

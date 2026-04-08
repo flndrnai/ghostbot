@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { LogOut, Moon, Sun, BookOpen, User, ChevronsUpDown } from '../../icons/index.jsx';
@@ -13,19 +13,34 @@ import {
   DropdownMenuSeparator,
 } from './ui/dropdown-menu.jsx';
 import { getMyProfile } from '../../profile/actions.js';
+import { useChatNav } from './chat-nav-context.jsx';
 
 export function SidebarUserNav({ session }) {
   const { open } = useSidebar();
   const { theme, setTheme } = useTheme();
+  const { registerProfileHandler } = useChatNav();
   const [profile, setProfile] = useState(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let cancelled = false;
     getMyProfile()
       .then((p) => { if (!cancelled) setProfile(p); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    return reload();
+  }, [reload]);
+
+  // Live refresh when profile is saved on any device
+  useEffect(() => {
+    if (!registerProfileHandler) return;
+    return registerProfileHandler(() => {
+      reload();
+    });
+  }, [registerProfileHandler, reload]);
 
   const email = profile?.email || session?.user?.email || 'User';
   const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim();
