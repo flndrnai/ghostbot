@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { LogOut, Moon, Sun, BookOpen, ChevronDown } from '../../icons/index.jsx';
+import { LogOut, Moon, Sun, BookOpen, ChevronsUpDown } from '../../icons/index.jsx';
 import { useSidebar, SidebarMenuButton } from './ui/sidebar.jsx';
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ export function SidebarUserNav({ session }) {
                 <span className="block text-sm font-semibold text-sidebar-foreground truncate">Account</span>
                 <span className="block text-[11px] text-sidebar-foreground/60 truncate">{email}</span>
               </span>
-              <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/60 flex-shrink-0" />
+              <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/60 flex-shrink-0" />
             </>
           )}
         </SidebarMenuButton>

@@ -98,6 +98,63 @@ export const Wrench = animated(WrenchBase, { rotate: -20 });
 export const X = animated(XBase, { rotate: 90 });
 export const XCircle = animated(XCircleBase, { scale: 1.1 });
 
+// ChevronsUpDown — two stacked chevrons, the bottom slides down
+// and the top slides up on hover. Custom because it animates two
+// SVG paths separately, which the generic `animated()` wrapper
+// can't do. Same hover protocol: parent passes isHovered when it
+// wants to drive the animation from a button hover state.
+const SPRING = { type: 'spring', stiffness: 250, damping: 25 };
+
+export const ChevronsUpDown = forwardRef(function ChevronsUpDown(
+  { className, size = 16, isHovered, style, ...rest },
+  ref,
+) {
+  const animate = isHovered ? 'animate' : 'normal';
+  return (
+    <motion.span
+      ref={ref}
+      className="inline-flex items-center justify-center"
+      style={style}
+      {...rest}
+    >
+      <svg
+        fill="none"
+        height={size}
+        width={size}
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+      >
+        <motion.path
+          d="m7 15 5 5 5-5"
+          initial="normal"
+          animate={animate}
+          transition={SPRING}
+          variants={{
+            normal: { translateY: '0%' },
+            animate: { translateY: 2 },
+          }}
+        />
+        <motion.path
+          d="m7 9 5-5 5 5"
+          initial="normal"
+          animate={animate}
+          transition={SPRING}
+          variants={{
+            normal: { translateY: '0%' },
+            animate: { translateY: -2 },
+          }}
+        />
+      </svg>
+    </motion.span>
+  );
+});
+ChevronsUpDown.displayName = 'ChevronsUpDownAnimated';
+
 // Loader with continuous spin (always animates)
 export const Loader2 = forwardRef(function Loader2({ className, size, style }, ref) {
   return (
