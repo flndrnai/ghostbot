@@ -398,8 +398,20 @@ export default function GitHubPage() {
               </li>
               <li>
                 <strong>Which events would you like to trigger this webhook?</strong> — pick the third radio:
-                <em> &quot;Let me select individual events.&quot;</em>. A checklist appears below — uncheck everything and tick only{' '}
-                <strong>Issue comments</strong>.
+                <em> &quot;Let me select individual events.&quot;</em>
+                <div className="mt-1.5 ml-2 rounded border border-border/40 bg-background/60 p-2 space-y-1">
+                  <p className="text-[11px] text-foreground">A long checklist appears. Set it like this:</p>
+                  <ul className="text-[11px] space-y-0.5 pl-2">
+                    <li>❌ <strong>Pushes</strong> — uncheck (GitHub turns it on by default)</li>
+                    <li>✅ <strong>Issue comments</strong> — the only box that should be checked</li>
+                    <li>❌ <em>Everything else</em> — leave unchecked</li>
+                  </ul>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Why only Issue comments: the <code className="bg-muted px-1 rounded">/ghostbot</code> trigger
+                    fires when someone comments on a PR. Adding more events just sends GhostBot extra
+                    payloads it ignores anyway, wasting bandwidth and rate-limit budget.
+                  </p>
+                </div>
               </li>
               <li>Make sure <strong>Active</strong> stays checked, then click the green <strong>Add webhook</strong> button.</li>
             </ol>
