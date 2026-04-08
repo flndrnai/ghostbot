@@ -14,7 +14,22 @@ async function requireSelf() {
 
 export async function getMyProfile() {
   const session = await requireSelf();
-  const user = getUserById(session.user.id);
+
+  // Primary lookup by id (from the JWT sub claim)
+  let user = getUserById(session.user.id);
+
+  // Fallback: the JWT id might be stale (cookie from a previous
+  // DB instance) while the email in the JWT is still valid. If
+  // so, look the user up by email instead and return that — the
+  // next time they log out + back in the JWT will re-issue with
+  // the right id.
+  if (!user && session.user.email) {
+    try {
+      const { getUserByEmail } = await import('../db/users.js');
+      user = getUserByEmail(session.user.email);
+    } catch {}
+  }
+
   if (!user) return null;
   return {
     id: user.id,
@@ -30,8 +45,18 @@ export async function getMyProfile() {
 
 export async function saveMyProfile({ firstName, lastName, country, avatarDataUrl, email }) {
   const session = await requireSelf();
-  const me = getUserById(session.user.id);
-  if (!me) return { success: false, error: 'Account not found' };
+  // Same fallback as getMyProfile — resolve by id first, then
+  // fall back to email if the JWT id is stale.
+  let me = getUserById(session.user.id);
+  if (!me && session.user.email) {
+    me = getUserByEmail(session.user.email);
+  }
+  if (!me) {
+    return {
+      success: false,
+      error: 'Your session is stale — please sign out and sign back in.',
+    };
+  }
 
   // Light validation
   const fields = {};
@@ -82,8 +107,11 @@ export async function saveMyProfile({ firstName, lastName, country, avatarDataUr
   }
 
   try {
-    updateUserProfile(session.user.id, fields);
-    publish(session.user.id, { type: 'profile:updated' });
+    // Always use the resolved row id, not session.user.id —
+    // handles the stale-JWT case where the cookie id no longer
+    // matches any row but the email still does.
+    updateUserProfile(me.id, fields);
+    publish(me.id, { type: 'profile:updated' });
     return { success: true };
   } catch (err) {
     return { success: false, error: err?.message || 'Failed to save profile' };

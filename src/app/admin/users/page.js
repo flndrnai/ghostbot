@@ -514,16 +514,16 @@ function EditUserModal({ user, onClose, onSaved }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>First name</Label>
-            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Their first name" />
           </div>
           <div className="space-y-1">
             <Label>Last name</Label>
-            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
+            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Their last name" />
           </div>
         </div>
         <div className="space-y-1">
           <Label>Country</Label>
-          <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" />
+          <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Their country" />
         </div>
         <div className="space-y-1">
           <Label>Email (sign-in)</Label>

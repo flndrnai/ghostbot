@@ -380,7 +380,7 @@ export function ProfileContent() {
                         <Input
                           value={draftFirstName}
                           onChange={(e) => setDraftFirstName(e.target.value)}
-                          placeholder="e.g. Jurgen"
+                          placeholder="Your first name"
                         />
                       </div>
                       <div className="space-y-2">
@@ -388,7 +388,7 @@ export function ProfileContent() {
                         <Input
                           value={draftLastName}
                           onChange={(e) => setDraftLastName(e.target.value)}
-                          placeholder="e.g. Van Cutsem"
+                          placeholder="Your last name"
                         />
                       </div>
                     </div>
@@ -397,7 +397,7 @@ export function ProfileContent() {
                       <Input
                         value={draftCountry}
                         onChange={(e) => setDraftCountry(e.target.value)}
-                        placeholder="e.g. Belgium"
+                        placeholder="Your country"
                       />
                     </div>
                     <div className="space-y-2">
