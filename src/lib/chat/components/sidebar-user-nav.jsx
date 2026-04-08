@@ -20,7 +20,7 @@ export function SidebarUserNav({ session }) {
   const initial = email.charAt(0).toUpperCase();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu fullWidth>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton className="hover:bg-sidebar-accent/50 group">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-xs font-semibold text-primary flex-shrink-0">
@@ -40,10 +40,10 @@ export function SidebarUserNav({ session }) {
       <DropdownMenuContent
         align="start"
         side="top"
-        className="min-w-[240px] p-0 overflow-hidden"
+        className="p-0 overflow-hidden"
       >
-        {/* Header — avatar + email + theme toggle */}
-        <div className="flex items-start justify-between gap-3 px-3 py-3 border-b border-border/60 bg-muted/30">
+        {/* Header — avatar + email + theme toggle, no bottom border */}
+        <div className="flex items-start justify-between gap-3 px-3 py-3 bg-muted/30">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary flex-shrink-0">
               {initial}
@@ -72,18 +72,6 @@ export function SidebarUserNav({ session }) {
           <DropdownMenuItem onClick={() => { window.location.href = '/docs'; }}>
             <BookOpen className="h-4 w-4" />
             Docs
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => { window.location.href = '/admin'; }}>
-            <span className="inline-flex h-4 w-4 items-center justify-center text-foreground/80">⚙</span>
-            Admin
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => { window.location.href = '/admin/monitoring'; }}>
-            <span className="inline-flex h-4 w-4 items-center justify-center text-foreground/80">▦</span>
-            Monitoring
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => { window.location.href = '/admin/backup'; }}>
-            <span className="inline-flex h-4 w-4 items-center justify-center text-foreground/80">⤓</span>
-            Backup
           </DropdownMenuItem>
         </div>
 

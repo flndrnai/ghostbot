@@ -5,28 +5,28 @@ import { cn } from '../../../utils.js';
 
 const DropdownContext = createContext({ open: false, setOpen: () => {} });
 
-export function DropdownMenu({ children }) {
+export function DropdownMenu({ children, fullWidth = false }) {
   const [open, setOpen] = useState(false);
   return (
-    <DropdownContext.Provider value={{ open, setOpen }}>
-      <div className="relative inline-block">{children}</div>
+    <DropdownContext.Provider value={{ open, setOpen, fullWidth }}>
+      <div className={cn('relative', fullWidth ? 'block w-full' : 'inline-block')}>{children}</div>
     </DropdownContext.Provider>
   );
 }
 
 export function DropdownMenuTrigger({ children, asChild }) {
-  const { open, setOpen } = useContext(DropdownContext);
+  const { open, setOpen, fullWidth } = useContext(DropdownContext);
   const handleClick = () => setOpen(!open);
 
   if (asChild) {
-    return <div onClick={handleClick}>{children}</div>;
+    return <div className={fullWidth ? 'block w-full' : undefined} onClick={handleClick}>{children}</div>;
   }
 
   return <button onClick={handleClick}>{children}</button>;
 }
 
 export function DropdownMenuContent({ children, align = 'start', side = 'bottom', className }) {
-  const { open, setOpen } = useContext(DropdownContext);
+  const { open, setOpen, fullWidth } = useContext(DropdownContext);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -42,14 +42,15 @@ export function DropdownMenuContent({ children, align = 'start', side = 'bottom'
 
   if (!open) return null;
 
-  const alignClass = align === 'end' ? 'right-0' : 'left-0';
+  const alignClass = fullWidth ? 'left-0 right-0' : (align === 'end' ? 'right-0' : 'left-0');
   const sideClass = side === 'top' ? 'bottom-full mb-1' : 'top-full mt-1';
 
   return (
     <div
       ref={ref}
       className={cn(
-        'absolute z-50 min-w-[8rem] rounded-md border border-border bg-card p-1 shadow-md',
+        'absolute z-50 rounded-md border border-border bg-card p-1 shadow-md',
+        fullWidth ? '' : 'min-w-[8rem]',
         alignClass,
         sideClass,
         className,
