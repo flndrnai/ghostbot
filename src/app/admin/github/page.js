@@ -10,8 +10,12 @@ import {
   testGitHubConnection,
   getGitHubConfigStatus,
   removeGitHubConfig,
+  saveGitHubWebhookSecret,
+  removeGitHubWebhookSecret,
+  getGitHubWebhookSecretStatus,
+  generateWebhookSecret,
 } from '../../../lib/admin/actions.js';
-import { CheckCircle, XCircle, Loader2, Github } from '../../../lib/icons/index.jsx';
+import { CheckCircle, XCircle, Loader2, Github, RefreshCw } from '../../../lib/icons/index.jsx';
 
 export default function GitHubPage() {
   const [token, setToken] = useState('');
@@ -26,6 +30,13 @@ export default function GitHubPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
+  // Webhook secret state
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [webhookSecretConfigured, setWebhookSecretConfigured] = useState(false);
+  const [webhookSaving, setWebhookSaving] = useState(false);
+  const [webhookMsg, setWebhookMsg] = useState(null);
+  const [webhookCopied, setWebhookCopied] = useState(false);
+
   useEffect(() => {
     getGitHubConfigStatus()
       .then((s) => {
@@ -37,7 +48,45 @@ export default function GitHubPage() {
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
+    getGitHubWebhookSecretStatus()
+      .then((s) => setWebhookSecretConfigured(s.configured))
+      .catch(() => {});
   }, []);
+
+  async function handleGenerateSecret() {
+    const r = await generateWebhookSecret();
+    if (r?.secret) setWebhookSecret(r.secret);
+  }
+
+  async function handleSaveWebhookSecret() {
+    if (!webhookSecret.trim()) return;
+    setWebhookSaving(true);
+    setWebhookMsg(null);
+    const r = await saveGitHubWebhookSecret(webhookSecret);
+    if (r.success) {
+      setWebhookSecretConfigured(true);
+      setWebhookMsg({ type: 'success', text: 'Webhook secret saved. Copy it now if you haven\u2019t added it to GitHub yet.' });
+    } else {
+      setWebhookMsg({ type: 'error', text: r.error || 'Failed to save' });
+    }
+    setWebhookSaving(false);
+  }
+
+  async function handleCopyWebhookSecret() {
+    if (!webhookSecret) return;
+    try {
+      await navigator.clipboard.writeText(webhookSecret);
+      setWebhookCopied(true);
+      setTimeout(() => setWebhookCopied(false), 2000);
+    } catch {}
+  }
+
+  async function handleRemoveWebhookSecret() {
+    await removeGitHubWebhookSecret();
+    setWebhookSecretConfigured(false);
+    setWebhookSecret('');
+    setWebhookMsg(null);
+  }
 
   const lockedIn = tokenConfigured && savedOwner && savedRepo && savedOwner === owner && savedRepo === repo;
 
@@ -225,6 +274,87 @@ export default function GitHubPage() {
           </Card>
         </>
       )}
+
+      {/* Webhook Secret — always visible, separate from token card */}
+      <Card className={webhookSecretConfigured ? 'border-primary/30' : ''}>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Webhook Secret</CardTitle>
+              <CardDescription>
+                Used to verify GitHub webhook signatures so only GitHub can trigger{' '}
+                <code className="bg-muted px-1 rounded">/ghostbot</code> PR comments.
+              </CardDescription>
+            </div>
+            {webhookSecretConfigured && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                Active
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {webhookSecretConfigured && !webhookSecret ? (
+            <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Webhook secret</div>
+                <div className="text-sm font-mono text-foreground">••••••••••••••••••••••••</div>
+              </div>
+              <Button onClick={handleRemoveWebhookSecret} size="sm" variant="destructive">
+                Clear
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Secret</Label>
+                  <Button onClick={handleGenerateSecret} variant="outline" size="sm">
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Generate
+                  </Button>
+                </div>
+                <Input
+                  type="text"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder="Click Generate or paste your own random string"
+                />
+                <p className="text-xs text-muted-foreground">
+                  64 hex characters recommended. <strong>Copy this now</strong> — once saved you won&apos;t see it again.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleSaveWebhookSecret} disabled={webhookSaving || !webhookSecret.trim()}>
+                  {webhookSaving ? <><Loader2 className="h-4 w-4 mr-2" /> Saving...</> : 'Save secret'}
+                </Button>
+                {webhookSecret && (
+                  <Button onClick={handleCopyWebhookSecret} variant="outline" size="sm">
+                    {webhookCopied ? 'Copied!' : 'Copy'}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+          {webhookMsg && (
+            <div className={`rounded-xl px-4 py-3 text-sm ${webhookMsg.type === 'success' ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-destructive/10 border border-destructive/20 text-destructive'}`}>
+              {webhookMsg.text}
+            </div>
+          )}
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+            <p className="font-semibold text-foreground">After saving, register the webhook on GitHub:</p>
+            <ol className="list-decimal pl-4 space-y-0.5">
+              <li>Open <code className="bg-muted px-1 rounded">github.com/&lt;owner&gt;/&lt;repo&gt;/settings/hooks</code></li>
+              <li>Click <strong>Add webhook</strong></li>
+              <li>Payload URL: <code className="bg-muted px-1 rounded">https://ghostbot.dev/api/github/webhook</code></li>
+              <li>Content type: <code className="bg-muted px-1 rounded">application/json</code></li>
+              <li>Secret: paste the same value you saved here</li>
+              <li>Events: select <strong>Issue comments</strong> only</li>
+              <li>Save</li>
+            </ol>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

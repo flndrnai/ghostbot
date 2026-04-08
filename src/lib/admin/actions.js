@@ -155,6 +155,38 @@ export async function testGitHubConnection() {
   }
 }
 
+export async function saveGitHubWebhookSecret(secret) {
+  await requireAdmin();
+  const clean = (secret || '').trim();
+  if (!clean) {
+    return { success: false, error: 'Secret cannot be empty' };
+  }
+  setConfigSecret('GITHUB_WEBHOOK_SECRET', clean);
+  invalidateConfigCache('GITHUB_WEBHOOK_SECRET');
+  return { success: true };
+}
+
+export async function removeGitHubWebhookSecret() {
+  await requireAdmin();
+  const { deleteConfigSecret } = await import('../db/config.js');
+  deleteConfigSecret('GITHUB_WEBHOOK_SECRET');
+  invalidateConfigCache('GITHUB_WEBHOOK_SECRET');
+  return { success: true };
+}
+
+export async function getGitHubWebhookSecretStatus() {
+  await requireAdmin();
+  const secret = getConfigSecret('GITHUB_WEBHOOK_SECRET');
+  return { configured: !!secret };
+}
+
+export async function generateWebhookSecret() {
+  await requireAdmin();
+  // 32 random bytes => 64 hex chars. Plenty of entropy for HMAC-SHA256.
+  const { randomBytes } = await import('crypto');
+  return { secret: randomBytes(32).toString('hex') };
+}
+
 export async function saveTelegramConfig({ botToken, chatId, webhookSecret }) {
   await requireAdmin();
   if (botToken?.trim()) {
