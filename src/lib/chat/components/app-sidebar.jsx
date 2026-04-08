@@ -66,7 +66,7 @@ export function AppSidebar({ session }) {
       }
     },
     'mod+shift+n': () => {
-      router.push('/');
+      router.push('/?new=1');
       if (isMobile) setOpenMobile(false);
     },
     'mod+/': () => setShowShortcuts((v) => !v),
@@ -97,7 +97,7 @@ export function AppSidebar({ session }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              href="/"
+              href="/?new=1"
               tooltip="New Chat"
               onClick={() => { if (isMobile) setOpenMobile(false); }}
               className="border border-dashed border-border/60 hover:border-primary/30 hover:bg-primary/5"
