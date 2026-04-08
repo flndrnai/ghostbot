@@ -106,6 +106,21 @@ export function deleteChat(chatId) {
   if (row?.userId) publish(row.userId, { type: 'chat:deleted', chatId });
 }
 
+export function toggleChatMemory(chatId) {
+  const db = getDb();
+  const chat = db.select().from(chats).where(eq(chats.id, chatId)).get();
+  if (!chat) return;
+
+  const now = Date.now();
+  const memoryEnabled = chat.memoryEnabled ? 0 : 1;
+  db.update(chats)
+    .set({ memoryEnabled, updatedAt: now })
+    .where(eq(chats.id, chatId))
+    .run();
+  publish(chat.userId, { type: 'chat:updated', chatId, fields: { memoryEnabled, updatedAt: now } });
+  return memoryEnabled;
+}
+
 export function toggleChatStarred(chatId) {
   const db = getDb();
   const chat = db.select().from(chats).where(eq(chats.id, chatId)).get();

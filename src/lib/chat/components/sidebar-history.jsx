@@ -2,10 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Star, Trash2, Pencil, X, Check } from '../../icons/index.jsx';
+import { Star, Trash2, Pencil, X, Check, ArrowUp } from '../../icons/index.jsx';
+import { Sparkles } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from './ui/sidebar.jsx';
 import { useChatNav } from './chat-nav-context.jsx';
-import { renameChatAction, deleteChatAction, toggleStarAction } from '../actions.js';
+import { renameChatAction, deleteChatAction, toggleStarAction, exportChatMarkdown, toggleChatMemoryAction } from '../actions.js';
+
+async function handleExport(chatId) {
+  try {
+    const res = await exportChatMarkdown(chatId);
+    if (!res?.content) return;
+    const blob = new Blob([res.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = res.filename || 'ghostbot-chat.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch {}
+}
 
 function formatChatTimestamp(ts) {
   if (!ts) return '';
@@ -68,6 +85,11 @@ function ChatItem({ chat, isActive }) {
     triggerRefresh();
   }
 
+  async function handleToggleMemory() {
+    await toggleChatMemoryAction(chat.id);
+    triggerRefresh();
+  }
+
   if (!open) {
     return (
       <SidebarMenuButton
@@ -124,13 +146,23 @@ function ChatItem({ chat, isActive }) {
 
       {/* Hover actions */}
       <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-sidebar px-1">
-        <button onClick={() => setEditing(true)} className="p-1 rounded hover:bg-sidebar-accent cursor-pointer">
+        <button onClick={() => setEditing(true)} className="p-1 rounded hover:bg-sidebar-accent cursor-pointer" title="Rename">
           <Pencil className="h-3 w-3 text-muted-foreground" />
         </button>
-        <button onClick={handleStar} className="p-1 rounded hover:bg-sidebar-accent cursor-pointer">
+        <button onClick={handleStar} className="p-1 rounded hover:bg-sidebar-accent cursor-pointer" title="Star">
           <Star className={`h-3 w-3 ${chat.starred ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
         </button>
-        <button onClick={handleDelete} className="p-1 rounded hover:bg-destructive/10 cursor-pointer">
+        <button
+          onClick={handleToggleMemory}
+          className="p-1 rounded hover:bg-sidebar-accent cursor-pointer"
+          title={chat.memoryEnabled ? 'Memory ON — click to disable for this chat' : 'Memory OFF — click to re-enable'}
+        >
+          <Sparkles className={`h-3 w-3 ${chat.memoryEnabled ? 'text-primary' : 'text-muted-foreground/40 line-through'}`} />
+        </button>
+        <button onClick={() => handleExport(chat.id)} className="p-1 rounded hover:bg-sidebar-accent cursor-pointer" title="Export as Markdown">
+          <ArrowUp className="h-3 w-3 text-muted-foreground rotate-180" />
+        </button>
+        <button onClick={handleDelete} className="p-1 rounded hover:bg-destructive/10 cursor-pointer" title="Delete">
           <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
         </button>
       </div>

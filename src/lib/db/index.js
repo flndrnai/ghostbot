@@ -76,6 +76,10 @@ function runAutoMigrations(sqlite) {
     addColumnIfMissing(sqlite, 'chat_summaries', 'embedding', 'TEXT');
     addColumnIfMissing(sqlite, 'chat_summaries', 'embedding_model', 'TEXT');
 
+    // Per-chat memory opt-out. 1 = participate in the memory/RAG system
+    // (default), 0 = don't embed or summarize this chat at all.
+    addColumnIfMissing(sqlite, 'chats', 'memory_enabled', 'INTEGER NOT NULL DEFAULT 1');
+
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_agent_jobs_user ON agent_jobs(user_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_agent_jobs_chat ON agent_jobs(chat_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_user ON knowledge_entries(user_id);`);

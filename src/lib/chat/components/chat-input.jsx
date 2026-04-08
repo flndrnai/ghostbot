@@ -47,7 +47,7 @@ export function ChatInput(props) {
   const hasValue = input.trim().length > 0;
 
   return (
-    <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 pt-4 pb-8 sm:px-6 sm:pt-5 sm:pb-10 safe-bottom">
+    <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-3 pt-3 pb-5 sm:px-6 sm:pt-5 sm:pb-10 safe-bottom">
       <div className="mx-auto max-w-3xl">
         <form onSubmit={handleSubmit}>
           <div className="relative">

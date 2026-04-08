@@ -63,10 +63,12 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   // On the first message of a new chat, search past chat summaries
   // for semantically relevant context and inject it into the system
   // prompt. Fire-and-forget: failures never block the chat.
+  // Respects the per-chat memoryEnabled opt-out.
   let systemPrompt = baseSystemPrompt;
+  const memoryOn = chat ? !!chat.memoryEnabled : true;
   const dbMessagesCount = (getMessagesByChatId(chatId) || []).length;
   const isFirstMessage = dbMessagesCount <= 1; // only the user msg we just saved
-  if (isFirstMessage) {
+  if (isFirstMessage && memoryOn) {
     try {
       const relevant = await searchChatSummaries(userMessage, { userId, topK: 3, minScore: 0.45 });
       if (relevant.length > 0) {
@@ -202,7 +204,8 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   // Auto-summarize the chat in the background once we have at least
   // one full user+assistant exchange. This writes to chat_summaries
   // with an embedding so future chats can retrieve the context.
-  if (fullContent && !fullContent.startsWith('Error:')) {
+  // Skipped if the chat has memory opt-out enabled.
+  if (memoryOn && fullContent && !fullContent.startsWith('Error:')) {
     (async () => {
       try {
         const fullHistory = getMessagesByChatId(chatId) || [];

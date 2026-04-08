@@ -96,7 +96,7 @@ function JobCard({ job }) {
   }
 
   return (
-    <div className={`rounded-2xl border px-5 py-4 ${color}`}>
+    <div className={`rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 overflow-hidden ${color}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider">
@@ -178,15 +178,15 @@ export function Messages({ messages = [], isLoading = false, onSuggestion, jobs 
   const safeJobs = Array.isArray(jobs) ? jobs : [];
 
   return (
-    <div ref={containerRef} className="flex flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-6">
-      <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div ref={containerRef} className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-3 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-3xl space-y-4 sm:space-y-6">
         {safeMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
+              className={`max-w-[90%] sm:max-w-[75%] rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm leading-relaxed break-words overflow-hidden ${
                 msg.role === 'user'
                   ? 'bg-primary/10 text-foreground border border-primary/10 whitespace-pre-wrap'
                   : 'bg-muted/60 text-foreground'

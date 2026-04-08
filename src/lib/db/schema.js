@@ -16,6 +16,7 @@ export const chats = sqliteTable('chats', {
   starred: integer('starred').notNull().default(0),
   chatMode: text('chat_mode').notNull().default('agent'),
   codeWorkspaceId: text('code_workspace_id'),
+  memoryEnabled: integer('memory_enabled').notNull().default(1),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
