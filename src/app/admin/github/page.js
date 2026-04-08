@@ -248,7 +248,7 @@ export default function GitHubPage() {
               <CardDescription>Used for agent jobs when no repo is specified</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Owner</Label>
                   <Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="flndrnai" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
 
 const SECTIONS = [
   { id: 'overview', label: 'Overview' },
@@ -37,15 +38,35 @@ export function DocsContent() {
 
   return (
     <div className="flex h-[100dvh] flex-col md:h-[calc(100vh-1px)]">
-      <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm px-6 py-4">
-        <h1 className="text-2xl font-bold text-foreground">GhostBot Docs</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <MobilePageHeader title="Docs" />
+      <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">GhostBot Docs</h1>
+        <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
           What every Admin section is, what it does, and why you need it.
         </p>
       </div>
 
+      {/* Mobile-only horizontal TOC */}
+      <div className="md:hidden border-b border-border/50 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-1 px-3 py-2">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => jump(s.id)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-colors ${
+                active === s.id
+                  ? 'bg-primary/15 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
-        {/* Sticky table of contents */}
+        {/* Sticky table of contents — desktop only */}
         <aside className="hidden md:block w-64 border-r border-border/50 overflow-y-auto py-6 px-4">
           <nav className="space-y-1">
             {SECTIONS.map((s) => (
@@ -65,7 +86,7 @@ export function DocsContent() {
         </aside>
 
         {/* Main docs */}
-        <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">
+        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-10 sm:py-8">
           <div className="mx-auto max-w-3xl space-y-12">
 
             <Section id="overview" title="Overview">

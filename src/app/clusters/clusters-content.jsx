@@ -11,6 +11,7 @@ import {
   createClusterFromTemplateAction,
 } from '../../lib/cluster/actions.js';
 import { ClusterCard } from '../../lib/cluster/components/cluster-card.jsx';
+import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
 import { Plus, Sparkles } from '../../lib/icons/index.jsx';
 
 export function ClustersContent() {
@@ -51,7 +52,8 @@ export function ClustersContent() {
 
   return (
     <div className="h-[100dvh] md:h-[calc(100vh-1px)] overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <MobilePageHeader title="Clusters" />
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-5 sm:py-8">
         <div className="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clusters</h1>

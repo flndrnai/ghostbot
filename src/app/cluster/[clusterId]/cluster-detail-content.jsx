@@ -12,6 +12,7 @@ import {
 } from '../../../lib/cluster/actions.js';
 import { RoleEditor } from '../../../lib/cluster/components/role-editor.jsx';
 import { ArrowLeft, Plus, Settings } from '../../../lib/icons/index.jsx';
+import { MobilePageHeader } from '../../../lib/chat/components/mobile-page-header.jsx';
 
 export function ClusterDetailContent() {
   const { clusterId } = useParams();
@@ -47,15 +48,20 @@ export function ClusterDetailContent() {
 
   return (
     <div className="h-[100dvh] md:h-[calc(100vh-1px)] overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <MobilePageHeader title={cluster?.name || 'Cluster'} />
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-5 sm:py-8">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => router.push('/clusters')} className="p-2 rounded-lg hover:bg-muted cursor-pointer">
+        <div className="flex items-start gap-3 mb-6 sm:mb-8">
+          <button
+            onClick={() => router.push('/clusters')}
+            className="p-2 rounded-lg hover:bg-muted cursor-pointer flex-shrink-0"
+            aria-label="Back to clusters"
+          >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{cluster.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground break-words">{cluster.name}</h1>
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1">
               <span className={`text-xs ${cluster.enabled ? 'text-primary' : 'text-muted-foreground'}`}>
                 {cluster.enabled ? 'Active' : 'Disabled'}
               </span>
