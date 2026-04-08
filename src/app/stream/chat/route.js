@@ -1,16 +1,7 @@
 import { auth } from '../../../lib/auth/config.js';
 import { chatStream } from '../../../lib/ai/index.js';
 import { enforceRateLimit } from '../../../lib/rate-limit.js';
-
-// Global registry of in-flight generators keyed by chatId so the
-// server-side stream keeps running to completion even when the
-// browser navigates away. The completed message lands in the DB
-// and is re-hydrated + live-synced via the SSE bus the next time
-// the client views the chat. Survives Next.js HMR via globalThis.
-if (!globalThis.__ghostbotLiveChats) {
-  globalThis.__ghostbotLiveChats = new Set();
-}
-const liveChats = globalThis.__ghostbotLiveChats;
+import { markChatStreaming, markChatDone, isChatStreaming } from '../../../lib/ai/live-chats.js';
 
 export async function POST(request) {
   // 30 chat messages per minute per IP
@@ -38,13 +29,13 @@ export async function POST(request) {
   // Guard against duplicate concurrent requests for the same chat.
   // If one is already running, reject the second — the client would
   // otherwise double-stream the same message.
-  if (liveChats.has(chatId)) {
+  if (isChatStreaming(chatId)) {
     return Response.json(
       { error: 'A response is already streaming for this chat. Please wait for it to finish.' },
       { status: 409 },
     );
   }
-  liveChats.add(chatId);
+  markChatStreaming(chatId, session.user.id);
 
   const encoder = new TextEncoder();
   const userId = session.user.id;
@@ -90,7 +81,7 @@ export async function POST(request) {
       console.error('[stream/chat] generator crashed:', error?.message);
       pushToClient(encoder.encode(`3:"${escapeStreamText(error?.message || 'Generation failed')}"\n`));
     } finally {
-      liveChats.delete(chatId);
+      markChatDone(chatId, userId);
       // Wake the reader so it can close the stream
       if (pendingResolve) {
         const r = pendingResolve;
@@ -107,7 +98,7 @@ export async function POST(request) {
   const stream = new ReadableStream({
     async pull(controller) {
       while (pending.length === 0) {
-        if (!liveChats.has(chatId) && pending.length === 0) {
+        if (!isChatStreaming(chatId) && pending.length === 0) {
           // Generator finished AND buffer is drained
           controller.close();
           return;

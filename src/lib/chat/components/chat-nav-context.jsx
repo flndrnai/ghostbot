@@ -10,6 +10,7 @@ const ChatNavContext = createContext({
   triggerRefresh: () => {},
   registerMessageHandler: () => () => {},
   registerAgentJobHandler: () => () => {},
+  registerStreamingHandler: () => () => {},
 });
 
 export function useChatNav() {
@@ -25,6 +26,8 @@ export function ChatNavProvider({ children }) {
   const handlersRef = useRef(new Map());
   // Global agent-job event handlers (Set of callbacks)
   const agentJobHandlersRef = useRef(new Set());
+  // Global chat-streaming handlers (Set of callbacks)
+  const streamingHandlersRef = useRef(new Set());
 
   const navigateToChat = useCallback((chatId) => {
     setActiveChatId(chatId);
@@ -52,6 +55,14 @@ export function ChatNavProvider({ children }) {
     };
   }, []);
 
+  const registerStreamingHandler = useCallback((handler) => {
+    if (typeof handler !== 'function') return () => {};
+    streamingHandlersRef.current.add(handler);
+    return () => {
+      streamingHandlersRef.current.delete(handler);
+    };
+  }, []);
+
   const handleSyncEvent = useCallback((event) => {
     if (!event) return;
     switch (event.type) {
@@ -74,6 +85,12 @@ export function ChatNavProvider({ children }) {
           try { h(event); } catch {}
         }
         break;
+      case 'chat:streaming-start':
+      case 'chat:streaming-end':
+        for (const h of streamingHandlersRef.current) {
+          try { h(event); } catch {}
+        }
+        break;
       default:
         break;
     }
@@ -90,6 +107,7 @@ export function ChatNavProvider({ children }) {
         triggerRefresh,
         registerMessageHandler,
         registerAgentJobHandler,
+        registerStreamingHandler,
       }}
     >
       {children}

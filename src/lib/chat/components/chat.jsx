@@ -11,12 +11,16 @@ function sanitizeMessages(arr) {
   );
 }
 
-export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
-  const { triggerRefresh, registerMessageHandler, registerAgentJobHandler } = useChatNav();
+export function Chat({ chatId: initialChatId, initialMessages = [], initialStreaming = false, session }) {
+  const { triggerRefresh, registerMessageHandler, registerAgentJobHandler, registerStreamingHandler } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
   const [localInput, setLocalInput] = useState('');
   const [messages, setMessages] = useState(() => sanitizeMessages(initialMessages));
   const [isLoading, setIsLoading] = useState(false);
+  // Tracks whether THIS chat has a stream still running on the
+  // server. Initialized from the SSR-passed initialStreaming flag
+  // so the thinking dots reappear when navigating back.
+  const [serverStreaming, setServerStreaming] = useState(initialStreaming);
   const [error, setError] = useState(null);
   const [agentMode, setAgentMode] = useState(false);
   const [jobs, setJobs] = useState([]);
@@ -26,9 +30,23 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
   // a new [] every time and would wipe streamed-in messages).
   useEffect(() => {
     setMessages(sanitizeMessages(initialMessages));
+    setServerStreaming(initialStreaming);
     chatIdRef.current = initialChatId || null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialChatId]);
+
+  // Subscribe to chat:streaming-start / chat:streaming-end events
+  // for THIS chat. Toggles the dots-on-mount indicator without
+  // requiring a fresh fetch from the client.
+  useEffect(() => {
+    if (!initialChatId || !registerStreamingHandler) return;
+    const handler = (event) => {
+      if (!event || event.chatId !== initialChatId) return;
+      if (event.type === 'chat:streaming-start') setServerStreaming(true);
+      if (event.type === 'chat:streaming-end') setServerStreaming(false);
+    };
+    return registerStreamingHandler(handler);
+  }, [initialChatId, registerStreamingHandler]);
 
   // Load existing agent jobs for this chat on mount / chat change
   useEffect(() => {
@@ -169,7 +187,16 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         }
 
         if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
+          if (response.status === 409) {
+            // Friendly message for the duplicate-stream guard
+            throw new Error('A response is still being generated for this chat. Wait a few seconds and try again.');
+          }
+          let detail = '';
+          try {
+            const data = await response.json();
+            detail = data?.error ? `: ${data.error}` : '';
+          } catch {}
+          throw new Error(`Server error: ${response.status}${detail}`);
         }
 
         // Parse the stream
@@ -244,7 +271,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
 
   return (
     <div className="flex h-full flex-col">
-      <Messages messages={messages} isLoading={isLoading} onSuggestion={handleSend} jobs={jobs} />
+      <Messages messages={messages} isLoading={isLoading || serverStreaming} onSuggestion={handleSend} jobs={jobs} />
       {error && (
         <div className="mx-4 mb-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
           {error.message || 'Something went wrong. Please try again.'}
@@ -254,7 +281,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], session }) {
         input={localInput}
         onInputChange={setLocalInput}
         onSend={handleSend}
-        isLoading={isLoading}
+        isLoading={isLoading || serverStreaming}
         agentMode={agentMode}
         onToggleMode={setAgentMode}
       />

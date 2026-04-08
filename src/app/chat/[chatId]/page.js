@@ -2,6 +2,7 @@ import { auth } from '../../../lib/auth/config.js';
 import { redirect } from 'next/navigation';
 import { getChatById, getMessagesByChatId } from '../../../lib/db/chats.js';
 import { ChatPage } from '../../../lib/chat/components/chat-page.jsx';
+import { isChatStreaming } from '../../../lib/ai/live-chats.js';
 
 function formatMessagesForClient(dbMessages) {
   if (!Array.isArray(dbMessages)) return [];
@@ -44,7 +45,8 @@ export default async function ChatIdPage({ params }) {
   console.log('[chat-page] dbMessages count:', dbMessages?.length, 'roles:', dbMessages?.map((m) => m.role));
 
   const initialMessages = formatMessagesForClient(dbMessages);
-  console.log('[chat-page] initialMessages count:', initialMessages.length);
+  const initialStreaming = isChatStreaming(chatId);
+  console.log('[chat-page] initialMessages count:', initialMessages.length, 'streaming:', initialStreaming);
 
-  return <ChatPage session={session} chatId={chatId} initialMessages={initialMessages} />;
+  return <ChatPage session={session} chatId={chatId} initialMessages={initialMessages} initialStreaming={initialStreaming} />;
 }

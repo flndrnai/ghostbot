@@ -18,7 +18,7 @@ function MobileHeader() {
   );
 }
 
-export function ChatPage({ session, chatId, initialMessages }) {
+export function ChatPage({ session, chatId, initialMessages, initialStreaming = false }) {
   return (
     <ChatNavProvider>
       <SidebarProvider>
@@ -27,7 +27,12 @@ export function ChatPage({ session, chatId, initialMessages }) {
           <MobileHeader />
           <div className="flex flex-1 flex-col h-[100dvh] md:h-[calc(100vh-1px)]">
             <ChatErrorBoundary>
-              <Chat chatId={chatId} initialMessages={initialMessages} session={session} />
+              <Chat
+                chatId={chatId}
+                initialMessages={initialMessages}
+                initialStreaming={initialStreaming}
+                session={session}
+              />
             </ChatErrorBoundary>
           </div>
         </SidebarInset>
