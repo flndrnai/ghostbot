@@ -24,20 +24,9 @@ async function handleExport(chatId) {
   } catch {}
 }
 
-function formatChatTimestamp(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = d.toDateString() === yesterday.toDateString();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  if (sameDay) return `Today · ${time}`;
-  if (isYesterday) return `Yesterday · ${time}`;
-  const day = d.toLocaleDateString([], { day: '2-digit', month: 'short' });
-  return `${day} · ${time}`;
-}
+// Re-exported from the central date-format module so the rest of
+// the file's references stay unchanged.
+import { formatChatTimestamp } from '../../date-format.js';
 
 function groupChatsByTime(chats) {
   const now = Date.now();

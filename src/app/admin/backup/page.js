@@ -5,6 +5,7 @@ import { Button } from '../../../lib/auth/components/ui/button.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { getBackupStats, exportBackup } from '../../../lib/admin/backup-actions.js';
 import { Loader2, CheckCircle, RefreshCw } from '../../../lib/icons/index.jsx';
+import { formatDateTime } from '../../../lib/date-format.js';
 
 function formatBytes(n) {
   if (!n) return '0 B';
@@ -46,7 +47,7 @@ export default function BackupPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setLastExportAt(new Date().toLocaleString([], { hour12: false }));
+      setLastExportAt(formatDateTime(Date.now()));
     } catch (err) {
       console.error(err);
     }

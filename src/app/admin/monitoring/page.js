@@ -4,11 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../../lib/auth/components/ui/button.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../lib/auth/components/ui/card.jsx';
 import { RefreshCw } from '../../../lib/icons/index.jsx';
-
-function formatTs(ts) {
-  if (!ts) return '';
-  return new Date(ts).toLocaleString([], { dateStyle: 'short', timeStyle: 'short', hour12: false });
-}
+import { formatDateTime as formatTs } from '../../../lib/date-format.js';
 
 export default function MonitoringPage() {
   const [summary, setSummary] = useState(null);

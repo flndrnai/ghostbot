@@ -14,11 +14,7 @@ import {
   deleteInvitationAction,
 } from '../../../lib/admin/user-actions.js';
 import { CheckCircle, Loader2, Plus, Trash2, RefreshCw } from '../../../lib/icons/index.jsx';
-
-function formatDate(ts) {
-  if (!ts) return '';
-  return new Date(ts).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short', hour12: false });
-}
+import { formatDateTime as formatDate } from '../../../lib/date-format.js';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);

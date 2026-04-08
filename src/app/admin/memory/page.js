@@ -14,14 +14,11 @@ import {
   exportMemory,
 } from '../../../lib/admin/memory-actions.js';
 import { CheckCircle, XCircle, Loader2, Trash2, Plus, RefreshCw } from '../../../lib/icons/index.jsx';
+import { formatDateTime } from '../../../lib/date-format.js';
 
 const PAGE_SIZE = 25;
 
-function formatDate(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short', hour12: false });
-}
+const formatDate = formatDateTime;
 
 export default function MemoryPage() {
   const [loading, setLoading] = useState(true);
