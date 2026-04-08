@@ -112,7 +112,7 @@ export function SidebarContent({ className, ...props }) {
 }
 
 export function SidebarFooter({ className, ...props }) {
-  return <div className={cn('border-t border-sidebar-border px-3 py-3', className)} {...props} />;
+  return <div className={cn('px-3 py-3', className)} {...props} />;
 }
 
 export function SidebarMenu({ className, ...props }) {
