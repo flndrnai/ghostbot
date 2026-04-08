@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useKeyboardShortcuts } from './use-keyboard-shortcuts.js';
+import { KeyboardShortcutsHelp } from './keyboard-shortcuts-help.jsx';
 import { MessageSquare, Settings, Plus } from '../../icons/index.jsx';
 import { Sparkles } from 'lucide-react';
 import {
@@ -23,7 +26,8 @@ import { SidebarHistory } from './sidebar-history.jsx';
 export function AppSidebar({ session }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { open, isMobile, setOpenMobile } = useSidebar();
+  const { open, isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const isChat = pathname === '/' || pathname?.startsWith('/chat');
   const isClusters = pathname?.startsWith('/clusters') || pathname?.startsWith('/cluster');
@@ -34,8 +38,38 @@ export function AppSidebar({ session }) {
     if (isMobile) setOpenMobile(false);
   }
 
+  // Global keyboard shortcuts — active on every page that mounts the sidebar.
+  useKeyboardShortcuts({
+    'mod+b': () => {
+      if (isMobile) {
+        setOpenMobile((v) => !v);
+      } else {
+        toggleSidebar();
+      }
+    },
+    'mod+k': () => {
+      const el = document.getElementById('chat-message-input');
+      if (el) {
+        el.focus();
+        // Scroll into view on mobile where the input can be off-screen
+        el.scrollIntoView({ block: 'nearest' });
+      } else {
+        // Not on a chat page — go home
+        router.push('/');
+      }
+    },
+    'mod+shift+n': () => {
+      router.push('/');
+      if (isMobile) setOpenMobile(false);
+    },
+    'mod+/': () => setShowShortcuts((v) => !v),
+    'escape': () => setShowShortcuts(false),
+  });
+
   return (
-    <Sidebar>
+    <>
+      <KeyboardShortcutsHelp open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      <Sidebar>
       <SidebarHeader>
         {open ? (
           <div className="flex items-center justify-between w-full">
@@ -119,5 +153,6 @@ export function AppSidebar({ session }) {
         )}
       </SidebarFooter>
     </Sidebar>
+    </>
   );
 }
