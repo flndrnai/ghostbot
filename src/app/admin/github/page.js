@@ -17,6 +17,13 @@ import {
 } from '../../../lib/admin/actions.js';
 import { CheckCircle, XCircle, Loader2, Github, RefreshCw } from '../../../lib/icons/index.jsx';
 
+// Build the webhook URL from the current page origin so the docs are
+// correct for any self-hosted instance, not just ghostbot.dev.
+function getWebhookUrl() {
+  if (typeof window === 'undefined') return 'https://<your-ghostbot-domain>/api/github/webhook';
+  return `${window.location.origin}/api/github/webhook`;
+}
+
 export default function GitHubPage() {
   const [token, setToken] = useState('');
   const [owner, setOwner] = useState('');
@@ -341,17 +348,44 @@ export default function GitHubPage() {
               {webhookMsg.text}
             </div>
           )}
-          <div className="rounded-xl border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground space-y-2">
             <p className="font-semibold text-foreground">After saving, register the webhook on GitHub:</p>
-            <ol className="list-decimal pl-4 space-y-0.5">
-              <li>Open <code className="bg-muted px-1 rounded">github.com/&lt;owner&gt;/&lt;repo&gt;/settings/hooks</code></li>
-              <li>Click <strong>Add webhook</strong></li>
-              <li>Payload URL: <code className="bg-muted px-1 rounded">https://ghostbot.dev/api/github/webhook</code></li>
-              <li>Content type: <code className="bg-muted px-1 rounded">application/json</code></li>
-              <li>Secret: paste the same value you saved here</li>
-              <li>Events: select <strong>Issue comments</strong> only</li>
-              <li>Save</li>
+            <ol className="list-decimal pl-4 space-y-1.5">
+              <li>
+                Open{' '}
+                {savedOwner && savedRepo ? (
+                  <a className="text-primary underline" target="_blank" rel="noopener noreferrer" href={`https://github.com/${savedOwner}/${savedRepo}/settings/hooks/new`}>
+                    github.com/{savedOwner}/{savedRepo}/settings/hooks/new
+                  </a>
+                ) : (
+                  <code className="bg-muted px-1 rounded">github.com/&lt;owner&gt;/&lt;repo&gt;/settings/hooks/new</code>
+                )}
+              </li>
+              <li>
+                <strong>Payload URL</strong>:{' '}
+                <code className="bg-muted px-1 rounded">{getWebhookUrl()}</code>
+                <br />
+                <span className="text-[10px] opacity-70">This is your GhostBot instance — every self-hosted install has its own URL.</span>
+              </li>
+              <li>
+                <strong>Content type</strong>: pick <code className="bg-muted px-1 rounded">application/json</code> from the dropdown (NOT the default form-urlencoded one — that will fail signature verification)
+              </li>
+              <li>
+                <strong>Secret</strong>: paste the random string you generated above on this page
+                ({webhookSecretConfigured ? 'currently saved' : 'not yet saved'}).
+                <br />
+                <span className="text-[10px] text-destructive">DO NOT paste your GitHub Personal Access Token here — that&apos;s a different value.</span>
+              </li>
+              <li>
+                <strong>Which events would you like to trigger this webhook?</strong> — pick the third radio:
+                <em> &quot;Let me select individual events&quot;</em>. Then a checklist appears below — uncheck everything and tick only{' '}
+                <strong>Issue comments</strong>.
+              </li>
+              <li>Make sure <strong>Active</strong> stays checked, then click <strong>Add webhook</strong>.</li>
             </ol>
+            <p className="pt-2 border-t border-border/40 text-[10px]">
+              Once registered, comment <code className="bg-muted px-1 rounded">/ghostbot fix the typo in line 42</code> on any pull request and GhostBot will pick it up.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -1,7 +1,13 @@
 import { auth } from '../../../lib/auth/config.js';
 import { chatStream } from '../../../lib/ai/index.js';
+import { enforceRateLimit } from '../../../lib/rate-limit.js';
 
 export async function POST(request) {
+  // 30 chat messages per minute per IP — covers a chatty user with two
+  // devices, blocks anything that looks like a runaway client loop.
+  const limited = enforceRateLimit(request, 'chat:stream', { limit: 30, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) {
     return new Response('Unauthorized', { status: 401 });

@@ -1,158 +1,216 @@
 # GhostBot
 
-Autonomous AI coding agent platform. Run any coding agent — Claude Code, Codex, Gemini, and more — from your browser on any device.
+Self-hosted AI coding agent platform. One web app for chatting with any LLM, running coding agents that open real GitHub PRs, and orchestrating multi-role agent pipelines — all from any device.
 
-## Features
+Live: **[ghostbot.dev](https://ghostbot.dev)**
+Repo: **[github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot)**
 
-- **Multi-Device Access** — Desktop, tablet, phone. Same interface everywhere.
-- **Plan Mode** — Dictate tasks from your phone, agents code in the background.
-- **Code Mode** — Full interactive terminal in the browser (xterm.js).
-- **Multi-Agent** — Claude Code, Codex, Gemini CLI, Pi, OpenCode, Kimi.
-- **10+ LLM Providers** — Anthropic, OpenAI, Google, DeepSeek, Ollama, and more.
-- **First-Class Ollama** — Run your own LLM on a VPS. Auto-detect models, test connections.
-- **GitHub Integration** — Auto-create branches, commits, PRs from agent jobs.
-- **Self-Learning Memory** — RAG knowledge base + cross-chat context summaries.
-- **Ghost-Themed UI** — Dark-first design with gold/spectral accent palette.
+---
 
-## Quick Start
+## What it does
+
+- **Chat with any LLM** — Anthropic, OpenAI, Google, or your own self-hosted Ollama (Qwen 2.5 Coder etc.)
+- **Real-time cross-device sync** — Open on laptop and phone simultaneously, every chat and message syncs over SSE
+- **Markdown chat rendering** — Code blocks with copy buttons, tables, lists, inline highlighting
+- **Self-learning memory** — Each chat is auto-summarized + embedded; future chats retrieve relevant past context automatically (RAG)
+- **Coding agents in Docker** — Aider, OpenCode, Codex, Gemini CLI. Fire from chat → agent clones repo, edits code, opens a PR, pings you
+- **Cluster pipelines** — Chain multiple agent roles together (planner → reviewer → coder → tester) with one-click templates
+- **GitHub PR comments → agent jobs** — Comment `/ghostbot fix this` on any PR, the bot picks it up and pushes a fix
+- **Telegram + Slack notifications** — Get pinged on your phone when agent jobs start, succeed, or fail
+- **Multi-user invitations** — Admin invites via one-time link, each user has isolated chat history and memory
+- **Admin backup** — One-click JSON export of the whole DB before risky migrations
+- **VS Code extension** — Open the same GhostBot UI inside your editor
+
+---
+
+## Quick start
 
 ### Prerequisites
 
-- Node.js 18+
-- Docker Desktop (for coding agents — not needed for Phase 1)
+- Node.js 22+
+- An Ollama instance (any VPS) — or an Anthropic / OpenAI / Google API key
+- (Optional) Docker daemon for running coding agents
 
-### Setup
+### Local dev
 
 ```bash
-# Clone the repo
 git clone https://github.com/flndrnai/ghostbot.git
 cd ghostbot/src
 
-# Install dependencies
 npm install
 
-# Create your .env file
-cp .env.example .env
-# Edit .env and set AUTH_SECRET (generate with: openssl rand -base64 32)
+# Generate an AUTH_SECRET
+openssl rand -base64 32 > /tmp/auth-secret
+# Then in your shell or .env:
+export AUTH_SECRET="$(cat /tmp/auth-secret)"
 
-# Start development server
 npm run dev
 ```
 
-### First Run
+Open `http://localhost:3000`. First visit creates the admin account.
 
-1. Open http://localhost:3000
-2. You'll be redirected to the setup page
-3. Create your admin account (email + password)
-4. Sign in — you're in the GhostBot chat interface
+### Production deployment (Dokploy)
 
-## Tech Stack
+GhostBot is built to be deployed via [Dokploy](https://dokploy.com) using the included `Dockerfile`. Required environment variables on the service:
+
+```
+AUTH_SECRET=<openssl rand -base64 32>
+AUTH_TRUST_HOST=true
+NODE_ENV=production
+DATABASE_PATH=/app/data/db/ghostbot.sqlite
+```
+
+Required volume mounts:
+
+| Type | Source | Mount path | Purpose |
+|---|---|---|---|
+| Volume | `ghostbot-data` | `/app/data` | Persists SQLite + memory across redeploys |
+| Bind mount | `/var/run/docker.sock` | `/var/run/docker.sock` | Lets GhostBot launch agent containers on the host |
+
+After the first deploy, hit `/login`, set up the admin account, then go to `/admin` and configure your LLM provider.
+
+---
+
+## Tech stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Frontend | React 19, Tailwind CSS v4 |
-| Database | SQLite + Drizzle ORM (WAL mode) |
-| Auth | NextAuth v5 (JWT sessions) |
+|---|---|
+| Framework | Next.js 16 (App Router, Server Actions) |
+| Frontend | React 19, Tailwind CSS v4, motion (animated icons), react-markdown |
+| Backend | Node.js 22 |
+| Database | SQLite + Drizzle ORM (WAL mode) + runtime auto-migrations |
+| Auth | NextAuth v5 (credentials, JWT sessions) |
 | Encryption | AES-256-GCM (secrets), bcrypt (passwords) |
-| Icons | Lucide React |
-| Future | LangChain, LangGraph, xterm.js, Monaco Editor, Docker, AI SDK v5 |
+| LLM | Direct fetch to Ollama `/api/chat` (no LangChain in the chat path), LangChain only for cloud providers |
+| Embeddings | Ollama `nomic-embed-text` (768 dims) |
+| Sync | Server-Sent Events with in-process pub/sub |
+| Containers | Docker Unix socket API (no CLI spawning) |
+| Coding agents | Aider (default), OpenCode, Codex, Gemini CLI — each in its own image |
 
-## Brand Colors
+---
+
+## Brand colours
 
 | Role | Hex | Usage |
-|------|-----|-------|
+|---|---|---|
 | Background | `#050509` | App background |
-| Dark Surface | `#111827` | Cards, sidebar |
-| Gold Accent | `#D4AF37` | Buttons, links, active states |
+| Dark surface | `#111827` | Cards, sidebar |
+| Gold accent | `#D4AF37` | Buttons, links, active states |
 | Primary | `#F5D97A` | Highlights, hover states |
 | Foreground | `#E5E2DA` | Text, borders |
 
-## Project Structure
+---
+
+## Project structure
 
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── layout.js           # Root layout + theme
-│   ├── globals.css          # Tailwind + ghost color tokens
-│   ├── page.js              # Home → Chat interface
-│   ├── login/               # Setup + login flow
-│   ├── admin/               # Admin settings
-│   └── api/                 # API routes
-├── lib/
-│   ├── auth/               # NextAuth v5, credentials, edge-safe config
-│   │   └── components/     # Setup form, login form, UI primitives
-│   ├── chat/               # Chat UI components
-│   │   └── components/     # Sidebar, messages, input, greeting
-│   └── db/                 # SQLite schema, encryption, config store
-├── drizzle/                # Auto-generated SQL migrations
-├── middleware.js            # Auth route protection
-├── instrumentation.js       # DB init on server start
-└── server.js               # Custom server (for WebSocket in Phase 3)
+ghostbot/
+├── src/                          # Next.js app
+│   ├── app/                      # App Router pages + API routes
+│   │   ├── page.js               # / chat
+│   │   ├── chat/[chatId]/        # /chat/<id>
+│   │   ├── clusters/             # cluster list + templates
+│   │   ├── cluster/[clusterId]/  # cluster detail + roles
+│   │   ├── admin/                # llms, ollama, chat, agents, github,
+│   │   │                         # telegram, slack, triggers, crons,
+│   │   │                         # containers, monitoring, memory,
+│   │   │                         # backup, users
+│   │   ├── docs/                 # /docs in-app guide
+│   │   ├── invite/[token]/       # public invite acceptance flow
+│   │   ├── login/                # setup + login
+│   │   ├── api/                  # external + browser route handlers
+│   │   └── stream/               # SSE endpoints (chat, sync, cluster logs)
+│   ├── lib/
+│   │   ├── ai/                   # Ollama client, model factory, chat stream
+│   │   ├── memory/               # embeddings, store, summarize
+│   │   ├── agent-jobs/           # launch, db, notify (Telegram + Slack)
+│   │   ├── cluster/              # actions, templates, runtime, execute
+│   │   ├── chat/                 # actions + components (sidebar, messages,
+│   │   │                         # input, markdown, error boundary, etc.)
+│   │   ├── auth/                 # NextAuth + setup actions
+│   │   ├── admin/                # server actions for every admin page
+│   │   ├── db/                   # schema, runtime auto-migrations, helpers
+│   │   ├── sync/                 # SSE bus + client hook
+│   │   ├── tools/                # docker, github, telegram, slack
+│   │   ├── icons/                # animated lucide wrappers
+│   │   ├── date-format.js        # single source for dd/mm/yyyy formatting
+│   │   └── config.js, paths.js   # config + path resolution
+│   ├── drizzle/                  # initial drizzle migrations (runtime
+│   │                             # auto-migrations cover everything since)
+│   ├── middleware.js             # auth route protection + invite bypass
+│   ├── instrumentation.js        # DB init on server start
+│   ├── server.js                 # custom server entry
+│   ├── Dockerfile                # production image
+│   └── package.json
+├── docker/agents/                # ephemeral coding agent images
+│   ├── aider/                    # ⭐ default — text diff format, works on small models
+│   ├── opencode/                 # tool-call protocol, needs strong model
+│   ├── codex/                    # OpenAI Codex CLI
+│   └── gemini/                   # Google Gemini CLI
+├── docs/
+│   └── OLLAMA_QWEN_SETUP.md      # full Ollama + Qwen 2.5 Coder setup + KVM8 migration
+├── vscode-extension/             # VS Code extension (webview wrapper)
+└── README.md                     # this file
 ```
+
+---
 
 ## Database
 
-11 tables managed by Drizzle ORM:
+15 tables, all auto-migrated at runtime via `runAutoMigrations` in `src/lib/db/index.js`:
 
 | Table | Purpose |
-|-------|---------|
-| `users` | Admin accounts |
-| `chats` | Chat sessions |
+|---|---|
+| `users` | Accounts with role (admin / user) |
+| `invitations` | One-time signup tokens for multi-user |
+| `chats` | Chat sessions, with per-chat `memory_enabled` opt-out |
 | `messages` | Chat messages |
-| `settings` | Encrypted config store |
-| `code_workspaces` | Interactive Docker sessions |
-| `clusters` | Worker clusters |
-| `cluster_roles` | Agent role definitions |
-| `notifications` | Job alerts |
+| `chat_summaries` | Auto-generated 2-3 sentence recaps + embeddings |
+| `knowledge_entries` | Manual or auto-saved knowledge with embeddings |
+| `agent_jobs` | Coding agent runs (status, output, PR URL) |
+| `clusters` + `cluster_roles` | Multi-role agent pipelines |
+| `notifications` | Job alerts queue |
 | `subscriptions` | Channel subscriptions |
-| `knowledge_entries` | RAG knowledge base |
-| `chat_summaries` | Cross-chat context |
+| `code_workspaces` | Interactive container sessions |
+| `token_usage` | Per-request token accounting |
+| `settings` | Encrypted config store (AES-256-GCM via PBKDF2) |
 
-## Roadmap
+---
 
-- **v0.1 (Current)** — Foundation: Next.js 16, auth, database, chat UI shell
-- **v0.2** — Core Chat: LLM integration, streaming, Ollama setup, memory/RAG
-- **v0.3** — Docker Agents: Headless mode, interactive terminal, agent jobs
-- **v0.4** — GitHub + Integrations: PRs, webhooks, Telegram bot
-- **v0.5** — Advanced: Clusters, monitoring dashboard, CLI tool
+## Self-hosted LLM (Ollama)
 
-## Self-Hosted LLM (Ollama)
+GhostBot is built for self-hosted AI first. The Admin → Ollama page auto-discovers installed models via `/api/tags`, lets you click Set Active on any of them, and tests the connection on every page load.
 
-GhostBot is built for self-hosted AI. Run Ollama on your VPS:
+For the full setup walkthrough including the cost-vs-cloud comparison and the KVM8 VPS migration checklist, see **[docs/OLLAMA_QWEN_SETUP.md](docs/OLLAMA_QWEN_SETUP.md)**.
 
-```
-URL: http://your-vps-ip:11434/v1
-API Key: any value (Ollama doesn't validate)
-Model: qwen2.5:32b (or any installed model)
-```
+Recommended setup at the time of writing:
 
-The admin UI has a dedicated Ollama page with auto-model detection, connection testing, and one-click switching between cloud and self-hosted providers.
+| Hardware | Model | Notes |
+|---|---|---|
+| 16 GB VPS (Hostinger KVM4) | `qwen2.5-coder:7b` | Stable for chat, fast |
+| 16 GB VPS | `qwen2.5-coder:14b` | Tight but works for chat alone |
+| 24 GB+ VPS (KVM8) | `qwen2.5-coder:32b` | Strong tool-calling, real agent reliability |
+| Plus on every box | `nomic-embed-text` | Required for the memory system (~274 MB) |
 
-## Optional Features & Requirements
+---
 
-Some features are optional and require additional setup:
+## Optional features & what they need
 
 | Feature | Requirement | Why |
-|---------|------------|-----|
-| **Web Chat** | None | Works out of the box on localhost |
-| **Ollama** | VPS with GPU | Self-hosted LLM, no API costs |
-| **Cloud LLM** | API key (Anthropic/OpenAI/Google) | Pay-per-token, no hardware needed |
-| **Docker Agents** | Docker Desktop or Docker Engine | Required for coding agents to run |
-| **Telegram Bot** | Public domain with HTTPS | Telegram needs a public URL to send webhook messages to your GhostBot instance |
-| **GitHub Integration** | GitHub PAT (Personal Access Token) | Required for creating branches, commits, and PRs |
-| **Agent Jobs** | Docker + GitHub PAT | Autonomous coding tasks that create PRs |
+|---|---|---|
+| Web chat | none | Works on localhost out of the box |
+| Self-hosted LLM | VPS with Ollama | Zero per-token cost forever |
+| Cloud LLM | API key | If you don't want to run your own |
+| Memory / RAG | `ollama pull nomic-embed-text` | Enables semantic search + auto-summarize |
+| Docker agents | docker.sock mounted | Required to launch coding-agent containers |
+| GitHub integration | Fine-grained PAT with Contents + PRs + Issues read/write | Branches, commits, PRs |
+| Telegram notifications | Public HTTPS URL + bot token | Telegram needs a public webhook target |
+| Slack notifications | Slack app + bot token + `chat:write` | Posts to the configured channel |
+| `/ghostbot` PR comment trigger | GitHub webhook + secret saved in admin | Comment `/ghostbot fix this` on a PR |
+| Multi-user | Nothing extra | Admin invites via Admin → Users |
+| VS Code extension | Build the .vsix locally | Embed your live GhostBot inside the editor |
 
-### About the Telegram requirement
-
-To use the Telegram bot feature, you need a **public domain name with HTTPS** (e.g., `https://ghostbot.yourdomain.com`). This is because Telegram sends messages to your server via webhooks — it POSTs to `https://yourdomain.com/api/telegram/webhook` whenever someone messages your bot. Localhost won't work.
-
-**Options for getting a public URL:**
-- **Own domain** (~$10/year) pointed to your VPS + free HTTPS via Let's Encrypt
-- **Cloudflare Tunnel** (free) — exposes your local server to a public URL
-- **ngrok** (free tier) — temporary public URL for testing
-
-If you don't need Telegram, you can skip this entirely. The web chat works perfectly without it.
+---
 
 ## License
 

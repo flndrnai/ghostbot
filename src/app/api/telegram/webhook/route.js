@@ -1,8 +1,15 @@
 import { getConfig } from '../../../../lib/config.js';
 import { getTelegramAdapter } from '../../../../lib/channels/index.js';
 import { chatStream } from '../../../../lib/ai/index.js';
+import { enforceRateLimit } from '../../../../lib/rate-limit.js';
 
 export async function POST(request) {
+  // Rate limit: telegram bot polling typically peaks at ~30/min per chat.
+  // 120/min is generous for normal use and stops a flood from a misbehaving
+  // upstream from spinning up a new chatStream every second.
+  const limited = enforceRateLimit(request, 'telegram:webhook', { limit: 120, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   // Validate webhook secret
   const secret = request.headers.get('x-telegram-bot-api-secret-token');
   const expectedSecret = getConfig('TELEGRAM_WEBHOOK_SECRET');

@@ -1,8 +1,13 @@
 import { auth } from '../../../lib/auth/config.js';
 import { launchAgentJob } from '../../../lib/agent-jobs/launch.js';
 import { listAgentJobsByChat, listAgentJobsByUser, getAgentJob } from '../../../lib/agent-jobs/db.js';
+import { enforceRateLimit } from '../../../lib/rate-limit.js';
 
 export async function POST(request) {
+  // 10 launches/min per IP — generous for normal use, hard cap on runaway
+  const limited = enforceRateLimit(request, 'agent-jobs:create', { limit: 10, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

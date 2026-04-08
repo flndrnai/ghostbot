@@ -6,10 +6,16 @@ import { fireTriggers } from '../../../../lib/triggers.js';
 import { launchAgentJob } from '../../../../lib/agent-jobs/launch.js';
 import { getAgentJob } from '../../../../lib/agent-jobs/db.js';
 import { postPullRequestComment, getPullRequest } from '../../../../lib/tools/github.js';
+import { enforceRateLimit } from '../../../../lib/rate-limit.js';
 
 const COMMAND_PREFIX = '/ghostbot';
 
 export async function POST(request) {
+  // Rate limit: GitHub bursts can be ~30/min on a busy repo. 60/min is plenty
+  // for our case and protects against signature-bypass abuse attempts.
+  const limited = enforceRateLimit(request, 'github:webhook', { limit: 60, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   // Validate webhook secret
   const signature = request.headers.get('x-hub-signature-256');
   // Prefer the secret stored via setConfigSecret, fall back to the

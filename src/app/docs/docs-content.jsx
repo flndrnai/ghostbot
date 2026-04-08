@@ -8,13 +8,22 @@ const SECTIONS = [
   { id: 'ollama', label: 'Ollama' },
   { id: 'chat', label: 'Chat Settings' },
   { id: 'agents', label: 'Agents' },
-  { id: 'github', label: 'GitHub (setup together)' },
-  { id: 'telegram', label: 'Telegram (setup together)' },
+  { id: 'github', label: 'GitHub' },
+  { id: 'telegram', label: 'Telegram' },
+  { id: 'slack', label: 'Slack' },
   { id: 'triggers', label: 'Triggers' },
   { id: 'crons', label: 'Crons' },
   { id: 'containers', label: 'Containers' },
   { id: 'monitoring', label: 'Monitoring' },
+  { id: 'memory', label: 'Memory' },
+  { id: 'backup', label: 'Backup' },
+  { id: 'users', label: 'Users' },
   { id: 'clusters', label: 'Clusters' },
+  { id: 'agent-jobs', label: 'Agent Jobs (chat)' },
+  { id: 'shortcuts', label: 'Keyboard shortcuts' },
+  { id: 'attachments', label: 'File attachments' },
+  { id: 'vscode', label: 'VS Code extension' },
+  { id: 'setup-checklist', label: 'Setup order' },
 ];
 
 export function DocsContent() {
@@ -408,6 +417,123 @@ export function DocsContent() {
                 Optional and advanced. For now, ignore the Clusters page until you&apos;ve done
                 a few standalone agent jobs and want to chain them. We&apos;ll set up the first
                 cluster together once GitHub + a coding agent are working end-to-end.
+              </Block>
+            </Section>
+
+            <Section id="slack" title="12. Slack">
+              <Block label="What it is">
+                Parallel to Telegram. Posts agent-job lifecycle pings (started, succeeded, failed) to a Slack channel.
+              </Block>
+              <Block label="Setup">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Open <a className="text-primary underline" href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer">api.slack.com/apps</a> → Create New App → From scratch</li>
+                  <li>Sidebar → OAuth &amp; Permissions → Bot Token Scopes → add <code>chat:write</code></li>
+                  <li>Same page → Install to Workspace → copy the Bot User OAuth Token (<code>xoxb-...</code>)</li>
+                  <li>Create a channel like <code>#ghostbot</code> in Slack and run <code>/invite @GhostBot</code></li>
+                  <li><a className="text-primary underline" href="/admin/slack">/admin/slack</a> → paste token + channel → Connect</li>
+                </ol>
+              </Block>
+            </Section>
+
+            <Section id="memory" title="13. Memory">
+              <Block label="What it is">
+                The self-learning layer that makes GhostBot different from a regular chat. Every finished chat is auto-summarized into 2-3 sentences with topic tags, embedded into a vector, and stored. When you start a new chat, GhostBot embeds your first message and pulls the top-3 most relevant past summaries into the system prompt — so it remembers context across conversations.
+              </Block>
+              <Block label="Setup">
+                One-time on the Ollama VPS: <code>ollama pull nomic-embed-text</code> (~274 MB). The Memory page shows a green &quot;Working&quot; status when embeddings are available.
+              </Block>
+              <Block label="What it does on the page">
+                Browse all stored summaries and knowledge entries, semantic search by meaning (not keywords), filter entries by source type, add manual entries to teach GhostBot facts directly, JSON export for backup. Per-chat opt-out: click the small Sparkles icon next to a chat in the sidebar to exclude that conversation from memory entirely.
+              </Block>
+            </Section>
+
+            <Section id="backup" title="14. Backup">
+              <Block label="What it is">
+                One-click JSON export of the whole GhostBot database (every non-secret table) plus the list of installed coding-agent Docker images on the host.
+              </Block>
+              <Block label="Why">
+                Insurance before risky migrations (KVM8, Dokploy redeploy, deleting volumes by accident). Secrets are NOT in the export — they stay encrypted on the server. To do a full disaster recovery you also need a copy of <code>AUTH_SECRET</code> from Dokploy environment variables.
+              </Block>
+              <Block label="How">
+                <a className="text-primary underline" href="/admin/backup">/admin/backup</a> → Download backup. Save the JSON somewhere safe (Mac + cloud drive).
+              </Block>
+            </Section>
+
+            <Section id="users" title="15. Users">
+              <Block label="What it is">
+                Multi-user invitation flow. Each user has isolated chats, agent jobs, memory, and clusters.
+              </Block>
+              <Block label="How to invite">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li><a className="text-primary underline" href="/admin/users">/admin/users</a> → enter email + role + expiration days</li>
+                  <li>Click Create invitation</li>
+                  <li>Click Copy link → send the link to the invitee any way you like</li>
+                  <li>The invitee opens it, sets a password, and gets a fresh isolated account</li>
+                  <li>Admins can promote/demote roles or delete users from the same page</li>
+                </ol>
+              </Block>
+              <Block label="Safety">
+                You cannot delete your own account. Invites are one-time use and expire per the configured days. Tokens are 256 bits of entropy.
+              </Block>
+            </Section>
+
+            <Section id="agent-jobs" title="16. Agent Jobs from chat">
+              <Block label="What it is">
+                A toggle in the chat input that switches the next message from a chat reply into an autonomous coding-agent job. The agent clones your repo, edits code, commits, pushes, and opens a PR.
+              </Block>
+              <Block label="How to use">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Click the wrench icon at the bottom-left of the chat input → it lights up gold</li>
+                  <li>Type the task (e.g. <em>&quot;Add a comment to README.md&quot;</em>)</li>
+                  <li>Hit send — a job card appears in the chat with status, streaming logs, and a PR URL when done</li>
+                  <li>Click View diff to see the full inline patch with red/green highlighting</li>
+                  <li>Click Re-run to fire the same job again with one click</li>
+                </ol>
+              </Block>
+              <Block label="Notifications">
+                Telegram and/or Slack ping on every state change: yellow circle started, green check done, red cross failed.
+              </Block>
+            </Section>
+
+            <Section id="shortcuts" title="17. Keyboard shortcuts">
+              <Block label="Global">
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><kbd>⌘ B</kbd> — toggle sidebar</li>
+                  <li><kbd>⌘ K</kbd> — focus chat input (or jump to home if not on a chat page)</li>
+                  <li><kbd>⌘ Shift N</kbd> — new chat</li>
+                  <li><kbd>⌘ /</kbd> — show this help modal in the app</li>
+                  <li><kbd>Esc</kbd> — close the help modal</li>
+                </ul>
+              </Block>
+              <Block label="In the chat input">
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><kbd>Enter</kbd> — send message</li>
+                  <li><kbd>Shift Enter</kbd> — new line</li>
+                </ul>
+              </Block>
+            </Section>
+
+            <Section id="attachments" title="18. File attachments in chat">
+              <Block label="What it does">
+                Drop, paste, or click-to-attach a text file into the chat input. Its contents get embedded as a fenced code block with the filename and language hint, ready to send to the LLM.
+              </Block>
+              <Block label="Limits">
+                64 KB per file. Binary or unsupported file types are skipped with an inline error. Recognized text extensions cover JS/TS/Python/Go/Rust/Java/Markdown/YAML/JSON/SQL/Shell/Dockerfile and many more.
+              </Block>
+            </Section>
+
+            <Section id="vscode" title="19. VS Code extension">
+              <Block label="What it is">
+                A VS Code extension that mounts your live GhostBot UI inside the editor as a sidebar panel. Same login session, same chat, same agents, same memory.
+              </Block>
+              <Block label="Install (sideload)">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li><code>npm install -g @vscode/vsce</code></li>
+                  <li><code>cd vscode-extension &amp;&amp; vsce package</code></li>
+                  <li><code>code --install-extension ghostbot-vscode-0.1.0.vsix</code></li>
+                  <li>In VS Code: <code>Cmd+Shift+P</code> → &quot;GhostBot: Open&quot;</li>
+                  <li>Settings → search &quot;ghostbot&quot; to point at a different URL if needed</li>
+                </ol>
               </Block>
             </Section>
 
