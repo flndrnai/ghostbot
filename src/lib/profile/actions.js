@@ -20,7 +20,6 @@ export async function getMyProfile() {
     id: user.id,
     email: user.email,
     role: user.role,
-    isOwner: !!user.owner,
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     country: user.country || '',
@@ -58,12 +57,11 @@ export async function saveMyProfile({ firstName, lastName, country, avatarDataUr
     }
   }
 
-  // Email change — only owner and admin can change their own email.
+  // Email change — only admins can change their own email.
   // Regular users contact an admin who edits via /admin/users.
   if (typeof email === 'string') {
     const trimmed = email.trim().toLowerCase();
-    const isPrivileged = !!me.owner || me.role === 'admin';
-    if (!isPrivileged) {
+    if (me.role !== 'admin') {
       return { success: false, error: 'Only admins can change their own email. Contact an admin.' };
     }
     if (!trimmed) {

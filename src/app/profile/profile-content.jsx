@@ -161,7 +161,7 @@ export function ProfileContent() {
   }
 
   // Compute whether the user is allowed to change their own email.
-  const canChangeEmail = !!profile && (profile.isOwner || profile.role === 'admin');
+  const canChangeEmail = !!profile && profile.role === 'admin';
 
   function openAvatarEditor() {
     setDraftAvatarDataUrl(profile?.avatarDataUrl || '');
@@ -442,24 +442,15 @@ export function ProfileContent() {
               <CardHeader>
                 <CardTitle className="text-lg">Account</CardTitle>
                 <CardDescription>
-                  {profile?.isOwner
-                    ? 'You are the creator of this GhostBot install. Full control over everything.'
-                    : profile?.role === 'admin'
-                      ? 'Admin account — you can manage users and settings.'
-                      : 'Standard user account — contact an admin for changes you can\u2019t make here.'}
+                  {profile?.role === 'admin'
+                    ? 'Admin account — you can manage users and settings.'
+                    : 'Standard user account — contact an admin for changes you can\u2019t make here.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Display name</span>
-                  <span className="text-foreground font-medium truncate flex items-center gap-2">
-                    {fullName || '—'}
-                    {profile?.isOwner && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                        Owner
-                      </span>
-                    )}
-                  </span>
+                  <span className="text-foreground font-medium truncate">{fullName || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Email</span>
@@ -467,7 +458,7 @@ export function ProfileContent() {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Role</span>
-                  <span className="text-foreground capitalize">{profile?.isOwner ? 'owner · admin' : (profile?.role || '—')}</span>
+                  <span className="text-foreground capitalize">{profile?.role || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Signed up</span>
