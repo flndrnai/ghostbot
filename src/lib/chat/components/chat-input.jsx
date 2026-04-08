@@ -147,7 +147,7 @@ export function ChatInput(props) {
   const hasValue = input.trim().length > 0;
 
   return (
-    <div className="bg-background/80 backdrop-blur-sm px-3 pt-3 pb-7 sm:px-6 sm:pt-5 sm:pb-7 safe-bottom">
+    <div className="bg-background/80 backdrop-blur-sm px-3 pt-3 pb-3 sm:px-6 sm:pt-5 sm:pb-3 safe-bottom">
       <div className="mx-auto max-w-3xl">
         <form onSubmit={handleSubmit}>
           <input
@@ -228,7 +228,7 @@ export function ChatInput(props) {
         {attachmentError && (
           <p className="mt-2 text-center text-[11px] text-destructive">{attachmentError}</p>
         )}
-        <div className="mt-3 flex items-center justify-center gap-3 text-xs text-foreground/80">
+        <div className="flex items-center justify-center gap-3 text-xs text-foreground/80 my-5">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
