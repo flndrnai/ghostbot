@@ -5,7 +5,7 @@ import { Button } from '../../lib/auth/components/ui/button.jsx';
 import { Input } from '../../lib/auth/components/ui/input.jsx';
 import { Label } from '../../lib/auth/components/ui/label.jsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../lib/auth/components/ui/card.jsx';
-import { CheckCircle, XCircle, Loader2 } from '../../lib/icons/index.jsx';
+import { CheckCircle, XCircle, Loader2, Pencil } from '../../lib/icons/index.jsx';
 import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
 import { getMyProfile, saveMyProfile } from '../../lib/profile/actions.js';
 import { formatDate } from '../../lib/date-format.js';
@@ -48,6 +48,11 @@ export function ProfileContent() {
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('');
   const [avatarDataUrl, setAvatarDataUrl] = useState('');
+
+  // Per-card edit mode toggles. The cards open in read mode and
+  // flip to edit mode only when the user clicks the pencil.
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [editingAvatar, setEditingAvatar] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -95,13 +100,42 @@ export function ProfileContent() {
     setAvatarDataUrl('');
   }
 
-  async function handleSave() {
+  function cancelIdentity() {
+    setFirstName(profile?.firstName || '');
+    setLastName(profile?.lastName || '');
+    setCountry(profile?.country || '');
+    setEditingIdentity(false);
+    setMsg(null);
+  }
+
+  function cancelAvatar() {
+    setAvatarDataUrl(profile?.avatarDataUrl || '');
+    setEditingAvatar(false);
+    setMsg(null);
+  }
+
+  async function handleSaveIdentity() {
     setSaving(true);
     setMsg(null);
-    const r = await saveMyProfile({ firstName, lastName, country, avatarDataUrl });
+    const r = await saveMyProfile({ firstName, lastName, country });
     if (r.success) {
-      setMsg({ type: 'success', text: 'Profile saved' });
-      setProfile((p) => ({ ...p, firstName, lastName, country, avatarDataUrl }));
+      setMsg({ type: 'success', text: 'Identity saved' });
+      setProfile((p) => ({ ...p, firstName, lastName, country }));
+      setEditingIdentity(false);
+    } else {
+      setMsg({ type: 'error', text: r.error || 'Failed to save' });
+    }
+    setSaving(false);
+  }
+
+  async function handleSaveAvatar() {
+    setSaving(true);
+    setMsg(null);
+    const r = await saveMyProfile({ avatarDataUrl });
+    if (r.success) {
+      setMsg({ type: 'success', text: 'Avatar saved' });
+      setProfile((p) => ({ ...p, avatarDataUrl }));
+      setEditingAvatar(false);
     } else {
       setMsg({ type: 'error', text: r.error || 'Failed to save' });
     }
@@ -129,89 +163,175 @@ export function ProfileContent() {
           </Card>
         ) : (
           <>
-            {/* Avatar card */}
-            <Card>
+            {/* ─── Avatar card ─── */}
+            <Card className={editingAvatar ? '' : 'border-primary/30'}>
               <CardHeader>
-                <CardTitle className="text-lg">Avatar</CardTitle>
-                <CardDescription>Square JPEG, max {Math.round(MAX_AVATAR_BYTES / 1024)} KB. Will be center-cropped.</CardDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg">{editingAvatar ? 'Edit avatar' : 'Avatar'}</CardTitle>
+                    <CardDescription>
+                      {editingAvatar
+                        ? `Square JPEG, max ${Math.round(MAX_AVATAR_BYTES / 1024)} KB. Will be center-cropped.`
+                        : 'Your profile picture'}
+                    </CardDescription>
+                  </div>
+                  {!editingAvatar && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingAvatar(true); setMsg(null); }}
+                      className="group inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
+                      aria-label="Edit avatar"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-5">
-                  <div className="relative">
+                {!editingAvatar ? (
+                  // ── Locked view ──
+                  <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
                     {avatarDataUrl ? (
                       <img
                         src={avatarDataUrl}
-                        alt="Avatar preview"
-                        className="h-24 w-24 rounded-full object-cover border border-border/60"
+                        alt=""
+                        className="h-12 w-12 rounded-full object-cover border border-border/60 flex-shrink-0"
                       />
                     ) : (
-                      <div className="h-24 w-24 rounded-full bg-primary/15 text-primary text-2xl font-semibold flex items-center justify-center border border-border/60">
+                      <div className="h-12 w-12 rounded-full bg-primary/15 text-primary text-base font-semibold flex items-center justify-center border border-border/60 flex-shrink-0">
                         {initial}
                       </div>
                     )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Avatar</div>
+                      <div className="text-sm text-foreground">
+                        {avatarDataUrl ? 'Custom image' : 'Default initial tile'}
+                      </div>
+                    </div>
+                    <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarFile}
-                    />
-                    <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm">
-                      Upload image
-                    </Button>
-                    {avatarDataUrl && (
-                      <Button onClick={handleClearAvatar} variant="outline" size="sm">
-                        Remove
+                ) : (
+                  // ── Edit view ──
+                  <>
+                    <div className="flex items-center gap-5">
+                      {avatarDataUrl ? (
+                        <img
+                          src={avatarDataUrl}
+                          alt="Avatar preview"
+                          className="h-24 w-24 rounded-full object-cover border border-border/60"
+                        />
+                      ) : (
+                        <div className="h-24 w-24 rounded-full bg-primary/15 text-primary text-2xl font-semibold flex items-center justify-center border border-border/60">
+                          {initial}
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarFile}
+                        />
+                        <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm">
+                          Upload image
+                        </Button>
+                        {avatarDataUrl && (
+                          <Button onClick={handleClearAvatar} variant="outline" size="sm">
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button onClick={handleSaveAvatar} disabled={saving} size="sm">
+                        {saving ? <><Loader2 className="h-4 w-4 mr-2" /> Saving...</> : 'Save avatar'}
                       </Button>
-                    )}
-                  </div>
-                </div>
+                      <Button onClick={cancelAvatar} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Identity card */}
-            <Card>
+            {/* ─── Identity card ─── */}
+            <Card className={editingIdentity ? '' : 'border-primary/30'}>
               <CardHeader>
-                <CardTitle className="text-lg">Identity</CardTitle>
-                <CardDescription>How GhostBot addresses you</CardDescription>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg">{editingIdentity ? 'Edit identity' : 'Identity'}</CardTitle>
+                    <CardDescription>How GhostBot addresses you</CardDescription>
+                  </div>
+                  {!editingIdentity && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingIdentity(true); setMsg(null); }}
+                      className="group inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
+                      aria-label="Edit identity"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {!editingIdentity ? (
+                  // ── Locked view ──
                   <div className="space-y-2">
-                    <Label>First name</Label>
-                    <Input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Flandrien"
-                    />
+                    <LockedRow label="First name" value={firstName} />
+                    <LockedRow label="Last name" value={lastName} />
+                    <LockedRow label="Country" value={country} />
+                    <LockedRow label="Email" value={profile?.email || '—'} mono />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Last name</Label>
-                    <Input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="e.g. Vancutsem"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Country</Label>
-                  <Input
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="e.g. Belgium"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
-                    <span className="text-sm font-mono text-foreground/90 truncate">{profile?.email || '—'}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex-shrink-0">read-only</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">The email you signed up with. Locked — contact your admin to change it.</p>
-                </div>
+                ) : (
+                  // ── Edit view ──
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>First name</Label>
+                        <Input
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="e.g. Jurgen"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Last name</Label>
+                        <Input
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="e.g. Van Cutsem"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Country</Label>
+                      <Input
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        placeholder="e.g. Belgium"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
+                        <span className="text-sm font-mono text-foreground/90 truncate">{profile?.email || '—'}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex-shrink-0">read-only</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">The email you signed up with. Locked — contact your admin to change it.</p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button onClick={handleSaveIdentity} disabled={saving} size="sm">
+                        {saving ? <><Loader2 className="h-4 w-4 mr-2" /> Saving...</> : 'Save identity'}
+                      </Button>
+                      <Button onClick={cancelIdentity} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -241,20 +361,29 @@ export function ProfileContent() {
               </CardContent>
             </Card>
 
-            {/* Save bar */}
-            <div className="flex items-center gap-3 sticky bottom-0 bg-background/80 backdrop-blur-sm py-3">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? <><Loader2 className="h-4 w-4 mr-2" /> Saving...</> : 'Save changes'}
-              </Button>
-              {msg && (
-                <span className={`text-xs flex items-center gap-1.5 ${msg.type === 'success' ? 'text-primary' : 'text-destructive'}`}>
-                  {msg.type === 'success' ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-                  {msg.text}
-                </span>
-              )}
-            </div>
+            {/* Inline status message — appears under whichever card just saved */}
+            {msg && (
+              <div className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2 ${msg.type === 'success' ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-destructive/10 border border-destructive/20 text-destructive'}`}>
+                {msg.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {msg.text}
+              </div>
+            )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function LockedRow({ label, value, mono = false }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className={`text-sm text-foreground truncate ${mono ? 'font-mono' : ''}`}>
+          {value || <span className="text-muted-foreground italic">not set</span>}
+        </div>
       </div>
     </div>
   );
