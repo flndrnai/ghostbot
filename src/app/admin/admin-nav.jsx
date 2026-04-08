@@ -11,6 +11,7 @@ const tabs = [
   { href: '/admin/agents', label: 'Agents' },
   { href: '/admin/github', label: 'GitHub' },
   { href: '/admin/telegram', label: 'Telegram' },
+  { href: '/admin/slack', label: 'Slack' },
   { href: '/admin/triggers', label: 'Triggers' },
   { href: '/admin/crons', label: 'Crons' },
   { href: '/admin/containers', label: 'Containers' },

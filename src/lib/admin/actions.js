@@ -224,6 +224,62 @@ export async function removeTelegramConfig() {
   return { success: true };
 }
 
+// ─── Slack ───
+
+export async function saveSlackConfig({ botToken, channel }) {
+  await requireAdmin();
+  if (botToken?.trim()) {
+    setConfigSecret('SLACK_BOT_TOKEN', botToken.trim());
+    invalidateConfigCache('SLACK_BOT_TOKEN');
+  }
+  if (channel !== undefined) {
+    setConfig('SLACK_CHANNEL', (channel || '').trim());
+  }
+  return { success: true };
+}
+
+export async function removeSlackConfig() {
+  await requireAdmin();
+  const { deleteConfigSecret } = await import('../db/config.js');
+  deleteConfigSecret('SLACK_BOT_TOKEN');
+  setConfig('SLACK_CHANNEL', '');
+  invalidateConfigCache();
+  return { success: true };
+}
+
+export async function getSlackConfigStatus() {
+  await requireAdmin();
+  const token = getConfigSecret('SLACK_BOT_TOKEN');
+  const channel = getConfig('SLACK_CHANNEL');
+  return { configured: !!token, channel: channel || '' };
+}
+
+export async function testSlackConnection() {
+  await requireAdmin();
+  try {
+    const token = getConfigSecret('SLACK_BOT_TOKEN');
+    if (!token) return { success: false, error: 'No Slack bot token configured' };
+    const { slackAuthTest, slackPostMessage } = await import('../tools/slack.js');
+    const auth = await slackAuthTest(token);
+    if (!auth.ok) return { success: false, error: auth.error };
+
+    // Optionally post a hello to the configured channel
+    const channel = getConfig('SLACK_CHANNEL');
+    let posted = false;
+    if (channel) {
+      try {
+        await slackPostMessage(token, channel, '👻 GhostBot connected to Slack successfully.');
+        posted = true;
+      } catch (err) {
+        return { success: false, error: `Auth OK but posting to ${channel} failed: ${err.message}` };
+      }
+    }
+    return { success: true, team: auth.team, user: auth.user, posted };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 export async function getTelegramConfigStatus() {
   await requireAdmin();
   const token = getConfigSecret('TELEGRAM_BOT_TOKEN');
