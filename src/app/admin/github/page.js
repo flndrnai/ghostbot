@@ -283,14 +283,17 @@ export default function GitHubPage() {
       )}
 
       {/* Webhook Secret — always visible, separate from token card */}
-      <Card className={webhookSecretConfigured ? 'border-primary/30' : ''}>
+      <Card id="webhook-secret-card" className={webhookSecretConfigured ? 'border-primary/30 scroll-mt-24' : 'scroll-mt-24'}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">Webhook Secret</CardTitle>
               <CardDescription>
-                Used to verify GitHub webhook signatures so only GitHub can trigger{' '}
-                <code className="bg-muted px-1 rounded">/ghostbot</code> PR comments.
+                A random string GhostBot generates here, then you paste into GitHub's webhook
+                Secret field. Used to verify each webhook actually came from GitHub (HMAC signature),
+                so only GitHub can trigger <code className="bg-muted px-1 rounded">/ghostbot</code>
+                {' '}PR comments. <strong className="text-destructive">This is NOT your GitHub
+                Personal Access Token</strong> — those are two different things.
               </CardDescription>
             </div>
             {webhookSecretConfigured && (
@@ -349,7 +352,23 @@ export default function GitHubPage() {
             </div>
           )}
           <div className="rounded-xl border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground space-y-2">
-            <p className="font-semibold text-foreground">After saving, register the webhook on GitHub:</p>
+            <p className="font-semibold text-foreground">Step-by-step: register the webhook on GitHub</p>
+
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1 text-foreground">
+              <p className="text-[11px]"><strong>First — get the webhook secret value:</strong></p>
+              <ol className="list-decimal pl-4 space-y-0.5 text-[11px]">
+                <li>Stay on this admin page (you&apos;re already on it)</li>
+                <li>
+                  Scroll up to the <a href="#webhook-secret-card" className="text-primary underline">Webhook Secret card</a> at the top of this section
+                </li>
+                <li>Click <strong>Generate</strong> — a 64-character hex string fills the input</li>
+                <li>Click <strong>Copy</strong> (do this BEFORE saving — once saved, the value is hidden)</li>
+                <li>Click <strong>Save secret</strong> — the card flips to a green Active state</li>
+              </ol>
+              <p className="text-[11px] mt-1">You now have the secret value in your clipboard. Keep this tab open.</p>
+            </div>
+
+            <p className="pt-1 font-semibold text-foreground">Then — register the webhook on GitHub:</p>
             <ol className="list-decimal pl-4 space-y-1.5">
               <li>
                 Open{' '}
@@ -368,20 +387,21 @@ export default function GitHubPage() {
                 <span className="text-[10px] opacity-70">This is your GhostBot instance — every self-hosted install has its own URL.</span>
               </li>
               <li>
-                <strong>Content type</strong>: pick <code className="bg-muted px-1 rounded">application/json</code> from the dropdown (NOT the default form-urlencoded one — that will fail signature verification)
+                <strong>Content type</strong>: change the dropdown to <code className="bg-muted px-1 rounded">application/json</code>
+                {' '}(NOT the default <code className="bg-muted px-1 rounded">application/x-www-form-urlencoded</code> — that will fail signature verification)
               </li>
               <li>
-                <strong>Secret</strong>: paste the random string you generated above on this page
-                ({webhookSecretConfigured ? 'currently saved' : 'not yet saved'}).
+                <strong>Secret</strong>: paste the value you just copied from the Webhook Secret card above
+                ({webhookSecretConfigured ? 'currently saved ✅' : 'NOT yet saved ⚠️ — go to the Webhook Secret card first'}).
                 <br />
-                <span className="text-[10px] text-destructive">DO NOT paste your GitHub Personal Access Token here — that&apos;s a different value.</span>
+                <span className="text-[10px] text-destructive">⚠️ DO NOT paste your GitHub Personal Access Token here. The PAT and the webhook secret are TWO DIFFERENT VALUES. The PAT lives in the &quot;Personal Access Token&quot; card above; the webhook secret lives in the &quot;Webhook Secret&quot; card.</span>
               </li>
               <li>
                 <strong>Which events would you like to trigger this webhook?</strong> — pick the third radio:
-                <em> &quot;Let me select individual events&quot;</em>. Then a checklist appears below — uncheck everything and tick only{' '}
+                <em> &quot;Let me select individual events.&quot;</em>. A checklist appears below — uncheck everything and tick only{' '}
                 <strong>Issue comments</strong>.
               </li>
-              <li>Make sure <strong>Active</strong> stays checked, then click <strong>Add webhook</strong>.</li>
+              <li>Make sure <strong>Active</strong> stays checked, then click the green <strong>Add webhook</strong> button.</li>
             </ol>
             <p className="pt-2 border-t border-border/40 text-[10px]">
               Once registered, comment <code className="bg-muted px-1 rounded">/ghostbot fix the typo in line 42</code> on any pull request and GhostBot will pick it up.
