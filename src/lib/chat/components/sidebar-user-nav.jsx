@@ -65,7 +65,14 @@ export function SidebarUserNav({ session }) {
           {open && (
             <>
               <span className="flex-1 min-w-0 text-left">
-                <span className="block text-sm font-semibold text-sidebar-foreground truncate">{displayName || 'Account'}</span>
+                <span className="block text-sm font-semibold text-sidebar-foreground truncate flex items-center gap-1.5">
+                  {displayName || 'Account'}
+                  {profile?.isOwner && (
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-px rounded-full flex-shrink-0">
+                      Owner
+                    </span>
+                  )}
+                </span>
                 <span className="block text-[11px] text-sidebar-foreground/60 truncate">{email}</span>
               </span>
               <ChevronsUpDown className="h-4 w-4 text-sidebar-foreground/60 flex-shrink-0" />
@@ -93,7 +100,14 @@ export function SidebarUserNav({ session }) {
               </span>
             )}
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-foreground truncate">{displayName || 'My Account'}</div>
+              <div className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
+                {displayName || 'My Account'}
+                {profile?.isOwner && (
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-px rounded-full flex-shrink-0">
+                    Owner
+                  </span>
+                )}
+              </div>
               <div className="text-[11px] text-muted-foreground truncate">{email}</div>
             </div>
           </div>

@@ -5,6 +5,11 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default('admin'),
+  // Owner = the very first user created at fresh install. Cannot
+  // be deleted, demoted or removed by anyone — including other
+  // admins. Exactly one owner per install. Stored as 0/1 integer
+  // because SQLite has no native boolean.
+  owner: integer('owner').notNull().default(0),
   firstName: text('first_name'),
   lastName: text('last_name'),
   country: text('country'),

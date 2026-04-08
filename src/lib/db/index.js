@@ -86,6 +86,24 @@ function runAutoMigrations(sqlite) {
     addColumnIfMissing(sqlite, 'users', 'country', 'TEXT');
     addColumnIfMissing(sqlite, 'users', 'avatar_data_url', 'TEXT');
 
+    // Owner role: exactly one user per install. Auto-backfilled
+    // for an existing single-admin install (the legacy case where
+    // GhostBot was installed before this column existed).
+    addColumnIfMissing(sqlite, 'users', 'owner', 'INTEGER NOT NULL DEFAULT 0');
+    try {
+      const ownerCount = sqlite.prepare(`SELECT COUNT(*) AS c FROM users WHERE owner = 1`).get();
+      if (ownerCount && ownerCount.c === 0) {
+        // No owner yet. If exactly one admin exists, mark them as owner.
+        const admins = sqlite.prepare(`SELECT id FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1`).all();
+        if (admins.length === 1) {
+          sqlite.prepare(`UPDATE users SET owner = 1 WHERE id = ?`).run(admins[0].id);
+          console.log('[db] backfilled owner=1 on legacy admin user', admins[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('[db] owner backfill failed:', err.message);
+    }
+
     // Multi-user: invitations table
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS invitations (

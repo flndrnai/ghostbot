@@ -27,6 +27,7 @@ export function updateUserProfile(id, fields) {
   if (fields.lastName !== undefined) allowed.lastName = fields.lastName;
   if (fields.country !== undefined) allowed.country = fields.country;
   if (fields.avatarDataUrl !== undefined) allowed.avatarDataUrl = fields.avatarDataUrl;
+  if (fields.email !== undefined) allowed.email = String(fields.email).toLowerCase();
   if (Object.keys(allowed).length === 0) return;
   db.update(users).set({ ...allowed, updatedAt: now }).where(eq(users.id, id)).run();
 }
@@ -60,6 +61,7 @@ export function createFirstUser(email, password) {
         email: email.toLowerCase(),
         passwordHash,
         role: 'admin',
+        owner: 1, // first user is always the owner
         createdAt: now,
         updatedAt: now,
       })

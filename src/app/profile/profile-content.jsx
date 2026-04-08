@@ -83,7 +83,11 @@ export function ProfileContent() {
   const [draftFirstName, setDraftFirstName] = useState('');
   const [draftLastName, setDraftLastName] = useState('');
   const [draftCountry, setDraftCountry] = useState('');
+  const [draftEmail, setDraftEmail] = useState('');
   const [draftAvatarDataUrl, setDraftAvatarDataUrl] = useState('');
+
+  // Email-change confirmation modal
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false);
 
   // Per-card edit mode toggles. Cards open locked; pencil flips to edit.
   const [editingIdentity, setEditingIdentity] = useState(false);
@@ -146,6 +150,7 @@ export function ProfileContent() {
     setDraftFirstName(profile?.firstName || '');
     setDraftLastName(profile?.lastName || '');
     setDraftCountry(profile?.country || '');
+    setDraftEmail(profile?.email || '');
     setEditingIdentity(true);
     setMsg(null);
   }
@@ -154,6 +159,9 @@ export function ProfileContent() {
     setEditingIdentity(false);
     setMsg(null);
   }
+
+  // Compute whether the user is allowed to change their own email.
+  const canChangeEmail = !!profile && (profile.isOwner || profile.role === 'admin');
 
   function openAvatarEditor() {
     setDraftAvatarDataUrl(profile?.avatarDataUrl || '');
@@ -166,17 +174,38 @@ export function ProfileContent() {
     setMsg(null);
   }
 
-  async function handleSaveIdentity() {
+  // Trigger save. If the email field changed AND the user is
+  // allowed to change it, gate the save behind a confirmation
+  // modal first. The modal then calls actuallySaveIdentity().
+  function handleSaveIdentity() {
+    const emailChanged = canChangeEmail && draftEmail.trim().toLowerCase() !== (profile?.email || '').toLowerCase();
+    if (emailChanged) {
+      setEmailConfirmOpen(true);
+      return;
+    }
+    actuallySaveIdentity();
+  }
+
+  async function actuallySaveIdentity() {
+    setEmailConfirmOpen(false);
     setSaving(true);
     setMsg(null);
-    const r = await saveMyProfile({
+    const payload = {
       firstName: draftFirstName,
       lastName: draftLastName,
       country: draftCountry,
-    });
+    };
+    if (canChangeEmail) payload.email = draftEmail;
+    const r = await saveMyProfile(payload);
     if (r.success) {
       setMsg({ type: 'success', text: 'Identity saved' });
-      setProfile((p) => ({ ...p, firstName: draftFirstName, lastName: draftLastName, country: draftCountry }));
+      setProfile((p) => ({
+        ...p,
+        firstName: draftFirstName,
+        lastName: draftLastName,
+        country: draftCountry,
+        ...(canChangeEmail ? { email: draftEmail.trim().toLowerCase() } : {}),
+      }));
       setEditingIdentity(false);
     } else {
       setMsg({ type: 'error', text: r.error || 'Failed to save' });
@@ -373,11 +402,27 @@ export function ProfileContent() {
                     </div>
                     <div className="space-y-2">
                       <Label>Email</Label>
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
-                        <span className="text-sm font-mono text-foreground/90 truncate">{profile?.email || '—'}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex-shrink-0">read-only</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">The email you signed up with. Locked — contact your admin to change it.</p>
+                      {canChangeEmail ? (
+                        <>
+                          <Input
+                            type="email"
+                            value={draftEmail}
+                            onChange={(e) => setDraftEmail(e.target.value)}
+                            placeholder="you@example.com"
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Changing this changes the email you sign in with. You&apos;ll be asked to confirm before it&apos;s saved.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-3">
+                            <span className="text-sm font-mono text-foreground/90 truncate">{profile?.email || '—'}</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex-shrink-0">read-only</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">The email you signed up with. Contact an admin to change it.</p>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 pt-1">
                       <Button onClick={handleSaveIdentity} disabled={saving} size="sm">
@@ -392,16 +437,29 @@ export function ProfileContent() {
               </CardContent>
             </Card>
 
-            {/* Read-only account info */}
+            {/* Account summary */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Account</CardTitle>
-                <CardDescription>Read-only — managed by the admin</CardDescription>
+                <CardDescription>
+                  {profile?.isOwner
+                    ? 'You are the creator of this GhostBot install. Full control over everything.'
+                    : profile?.role === 'admin'
+                      ? 'Admin account — you can manage users and settings.'
+                      : 'Standard user account — contact an admin for changes you can\u2019t make here.'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Display name</span>
-                  <span className="text-foreground font-medium truncate">{fullName || '—'}</span>
+                  <span className="text-foreground font-medium truncate flex items-center gap-2">
+                    {fullName || '—'}
+                    {profile?.isOwner && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                        Owner
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Email</span>
@@ -409,7 +467,7 @@ export function ProfileContent() {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Role</span>
-                  <span className="text-foreground capitalize">{profile?.role || '—'}</span>
+                  <span className="text-foreground capitalize">{profile?.isOwner ? 'owner · admin' : (profile?.role || '—')}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Signed up</span>
@@ -428,6 +486,38 @@ export function ProfileContent() {
           </>
         )}
       </div>
+
+      {/* Email-change confirmation modal */}
+      {emailConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4"
+          onClick={() => setEmailConfirmOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border/60 bg-card shadow-xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-foreground">Change sign-in email?</h2>
+            <p className="mt-3 text-sm text-foreground/80">
+              You&apos;re about to change your sign-in email from{' '}
+              <span className="font-mono text-foreground">{profile?.email}</span> to{' '}
+              <span className="font-mono text-primary">{draftEmail.trim().toLowerCase()}</span>.
+            </p>
+            <p className="mt-3 text-sm text-foreground/80">
+              The next time you log out, you&apos;ll need this new email to sign back in. Make sure
+              you have it written down somewhere safe.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button onClick={() => setEmailConfirmOpen(false)} variant="outline" size="sm">
+                Cancel
+              </Button>
+              <Button onClick={actuallySaveIdentity} disabled={saving} size="sm">
+                {saving ? <><Loader2 className="h-4 w-4 mr-2" /> Saving...</> : 'Yes, change my email'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
