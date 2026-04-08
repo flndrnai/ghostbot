@@ -157,3 +157,5 @@ If you don't need Telegram, you can skip this entirely. The web chat works perfe
 ## License
 
 MIT
+
+<!-- ghostbot-webhook-test marker: 2026-04-08T08:18:22Z -->
