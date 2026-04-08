@@ -45,6 +45,44 @@ export async function createClusterAction(name) {
   return dbCreateCluster(session.user.id, { name });
 }
 
+export async function listClusterTemplates() {
+  await requireAuth();
+  const { CLUSTER_TEMPLATES } = await import('./templates.js');
+  return CLUSTER_TEMPLATES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    roleCount: t.roles.length,
+    roles: t.roles.map((r) => ({ roleName: r.roleName, role: r.role })),
+  }));
+}
+
+export async function createClusterFromTemplateAction(templateId) {
+  const session = await requireAuth();
+  const { getTemplate } = await import('./templates.js');
+  const tpl = getTemplate(templateId);
+  if (!tpl) return { error: 'Template not found' };
+
+  // Create the cluster with the template's name + system prompt
+  const cluster = dbCreateCluster(session.user.id, {
+    name: tpl.name,
+    systemPrompt: tpl.systemPrompt,
+  });
+  const clusterId = cluster.id;
+
+  // Create each role in order
+  for (const r of tpl.roles) {
+    dbCreateRole(clusterId, {
+      roleName: r.roleName,
+      role: r.role,
+      prompt: r.prompt,
+    });
+  }
+
+  reloadClusterRuntime();
+  return { success: true, clusterId, name: tpl.name, roleCount: tpl.roles.length };
+}
+
 export async function renameClusterAction(clusterId, name) {
   await requireAuth();
   updateCluster(clusterId, { name });
