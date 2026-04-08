@@ -11,22 +11,45 @@ import { getMyProfile, saveMyProfile } from '../../lib/profile/actions.js';
 import { formatDate } from '../../lib/date-format.js';
 
 const MAX_AVATAR_BYTES = 256 * 1024;
+const ACCEPTED_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']);
 
-// Resize a File to a square JPEG data URL no larger than `target` px on each side.
-async function fileToAvatarDataUrl(file, target = 320) {
-  const dataUrl = await new Promise((resolve, reject) => {
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+// Resize a still image to a square data URL preserving the
+// source format when it makes sense:
+//   GIF                      -> kept as-is, no resize (preserves animation)
+//   PNG, WEBP                -> re-encoded as PNG (preserves transparency)
+//   JPEG / JPG / unknown     -> re-encoded as JPEG quality 0.85
+//
+// Square crop is centered. Output edge length defaults to 320 px.
+async function fileToAvatarDataUrl(file, target = 320) {
+  const mime = (file.type || '').toLowerCase();
+
+  // GIFs: animation can't survive a canvas re-encode, so we keep
+  // the original bytes if they fit the size budget.
+  if (mime === 'image/gif') {
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new Error(`GIF is ${Math.round(file.size / 1024)} KB, max ${Math.round(MAX_AVATAR_BYTES / 1024)} KB`);
+    }
+    return await readFileAsDataUrl(file);
+  }
+
+  const dataUrl = await readFileAsDataUrl(file);
   const img = await new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = reject;
     image.src = dataUrl;
   });
-  // Square crop, centered
+
+  // Square center crop
   const side = Math.min(img.width, img.height);
   const sx = (img.width - side) / 2;
   const sy = (img.height - side) / 2;
@@ -35,6 +58,11 @@ async function fileToAvatarDataUrl(file, target = 320) {
   canvas.height = target;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, sx, sy, side, side, 0, 0, target, target);
+
+  // PNG and WEBP keep transparency by encoding as PNG.
+  // Everything else becomes JPEG to keep file size in check.
+  const wantsAlpha = mime === 'image/png' || mime === 'image/webp';
+  if (wantsAlpha) return canvas.toDataURL('image/png');
   return canvas.toDataURL('image/jpeg', 0.85);
 }
 
@@ -74,8 +102,10 @@ export function ProfileContent() {
     const file = e.target.files?.[0];
     if (!file) return;
     setMsg(null);
-    if (!file.type.startsWith('image/')) {
-      setMsg({ type: 'error', text: 'Please pick an image file.' });
+    const mime = (file.type || '').toLowerCase();
+    if (!ACCEPTED_MIMES.has(mime)) {
+      setMsg({ type: 'error', text: 'Allowed formats: JPEG, JPG, PNG, WEBP, GIF.' });
+      e.target.value = '';
       return;
     }
     try {
@@ -90,7 +120,7 @@ export function ProfileContent() {
       }
       setAvatarDataUrl(next);
     } catch (err) {
-      setMsg({ type: 'error', text: 'Failed to read image' });
+      setMsg({ type: 'error', text: err?.message || 'Failed to read image' });
     } finally {
       e.target.value = '';
     }
@@ -171,7 +201,7 @@ export function ProfileContent() {
                     <CardTitle className="text-lg">{editingAvatar ? 'Edit avatar' : 'Avatar'}</CardTitle>
                     <CardDescription>
                       {editingAvatar
-                        ? `Square JPEG, max ${Math.round(MAX_AVATAR_BYTES / 1024)} KB. Will be center-cropped.`
+                        ? `JPEG, JPG, PNG, WEBP or GIF. Max ${Math.round(MAX_AVATAR_BYTES / 1024)} KB. Center-cropped to a square.`
                         : 'Your profile picture'}
                     </CardDescription>
                   </div>
@@ -229,7 +259,7 @@ export function ProfileContent() {
                         <input
                           ref={fileInputRef}
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                           className="hidden"
                           onChange={handleAvatarFile}
                         />
