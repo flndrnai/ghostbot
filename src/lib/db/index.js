@@ -80,6 +80,12 @@ function runAutoMigrations(sqlite) {
     // (default), 0 = don't embed or summarize this chat at all.
     addColumnIfMissing(sqlite, 'chats', 'memory_enabled', 'INTEGER NOT NULL DEFAULT 1');
 
+    // User profile fields
+    addColumnIfMissing(sqlite, 'users', 'first_name', 'TEXT');
+    addColumnIfMissing(sqlite, 'users', 'last_name', 'TEXT');
+    addColumnIfMissing(sqlite, 'users', 'country', 'TEXT');
+    addColumnIfMissing(sqlite, 'users', 'avatar_data_url', 'TEXT');
+
     // Multi-user: invitations table
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS invitations (

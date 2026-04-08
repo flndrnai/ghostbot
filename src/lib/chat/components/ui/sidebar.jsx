@@ -123,17 +123,35 @@ export function SidebarMenuItem({ className, ...props }) {
   return <li className={cn('', className)} {...props} />;
 }
 
+// Recursively walk a child tree (descending into fragments and any
+// element with its own children) cloning every element whose type
+// has a displayName ending in 'Animated' so it receives isHovered.
+function injectHoverProp(node, hovered) {
+  if (Array.isArray(node)) return node.map((c) => injectHoverProp(c, hovered));
+  if (!isValidElement(node)) return node;
+  // Animated leaf: inject the prop directly
+  if (node.type?.displayName?.endsWith('Animated')) {
+    return cloneElement(node, { isHovered: hovered });
+  }
+  // Fragment or any element with its own children — recurse
+  const childChildren = node.props?.children;
+  if (childChildren !== undefined && childChildren !== null) {
+    const newChildren = injectHoverProp(childChildren, hovered);
+    if (newChildren !== childChildren) {
+      return cloneElement(node, undefined, newChildren);
+    }
+  }
+  return node;
+}
+
 export function SidebarMenuButton({ children, isActive, className, tooltip, onClick, href, ...props }) {
   const { open } = useSidebar();
   const [hovered, setHovered] = useState(false);
 
-  // Clone children to pass isHovered prop to animated icons
-  const enhancedChildren = Children.map(children, (child) => {
-    if (isValidElement(child) && child.type?.displayName?.endsWith('Animated')) {
-      return cloneElement(child, { isHovered: hovered });
-    }
-    return child;
-  });
+  // Clone children to pass isHovered prop to animated icons,
+  // descending into fragments so nested icons (e.g. inside an
+  // {open && (<>...</>)} block) still pick up the hover state.
+  const enhancedChildren = injectHoverProp(children, hovered);
 
   const classes = cn(
     'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',

@@ -25,6 +25,7 @@ import {
   Sun as SunBase,
   Timer as TimerBase,
   Trash2 as Trash2Base,
+  User as UserBase,
   Wrench as WrenchBase,
   X as XBase,
   XCircle as XCircleBase,
@@ -94,6 +95,7 @@ export const Star = animated(StarBase, { scale: 1.2, rotate: 15 });
 export const Sun = animated(SunBase, { rotate: 45 });
 export const Timer = animated(TimerBase, { scale: 1.1 });
 export const Trash2 = animated(Trash2Base, { y: 2 });
+export const User = animated(UserBase, { scale: 1.1 });
 export const Wrench = animated(WrenchBase, { rotate: -20 });
 export const X = animated(XBase, { rotate: 90 });
 export const XCircle = animated(XCircleBase, { scale: 1.1 });

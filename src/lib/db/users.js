@@ -14,6 +14,23 @@ export function getFirstAdminUser() {
   return db.select().from(users).where(eq(users.role, 'admin')).get();
 }
 
+export function getUserById(id) {
+  const db = getDb();
+  return db.select().from(users).where(eq(users.id, id)).get();
+}
+
+export function updateUserProfile(id, fields) {
+  const db = getDb();
+  const now = Date.now();
+  const allowed = {};
+  if (fields.firstName !== undefined) allowed.firstName = fields.firstName;
+  if (fields.lastName !== undefined) allowed.lastName = fields.lastName;
+  if (fields.country !== undefined) allowed.country = fields.country;
+  if (fields.avatarDataUrl !== undefined) allowed.avatarDataUrl = fields.avatarDataUrl;
+  if (Object.keys(allowed).length === 0) return;
+  db.update(users).set({ ...allowed, updatedAt: now }).where(eq(users.id, id)).run();
+}
+
 export function getUserByEmail(email) {
   const db = getDb();
   return db
