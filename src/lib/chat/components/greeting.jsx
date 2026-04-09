@@ -1,6 +1,16 @@
 'use client';
 
 const SUGGESTIONS = [
+  { label: 'Brainstorm', prompt: `I want to brainstorm a new project idea with you. Guide me through a structured brainstorm session. Ask me these questions one at a time (wait for my answer before moving to the next):
+
+1. **What do you want to build?** (the core idea in one sentence)
+2. **Who is it for?** (target users/audience)
+3. **What are the must-have features for the MVP?** (3-5 features max)
+4. **What tech stack do you prefer?** (or should I recommend one?)
+5. **Any design preferences?** (dark mode, minimal, playful, corporate, etc.)
+6. **What's the timeline/scope?** (weekend project, month-long, ongoing?)
+
+After all questions are answered, summarize the brainstorm as a structured project brief. I can then create a project from this conversation.` },
   { label: 'Create a project', prompt: 'Help me create a new project. Ask me what kind of project I want to build and guide me through the setup.' },
   { label: 'Review code', prompt: 'I want you to review some code. Ask me to share the code and what aspects you should focus on.' },
   { label: 'Fix a bug', prompt: 'Help me fix a bug. Ask me to describe the bug and share the relevant code.' },

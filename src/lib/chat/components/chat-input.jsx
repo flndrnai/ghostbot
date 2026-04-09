@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { ArrowUp, Square, Wrench, MessageSquare } from '../../icons/index.jsx';
 import { X, FolderOpen } from 'lucide-react';
 import { ProjectSelector } from './project-selector.jsx';
+import { CreateProjectFromChat } from './create-project-from-chat.jsx';
 
 // Only embed text-ish files. Hard cap to prevent blowing up the LLM context.
 const MAX_ATTACHMENT_BYTES = 64 * 1024; // 64 KB per file
@@ -366,6 +367,12 @@ export function ChatInput(props) {
                 <FolderOpen className="h-3 w-3" />
                 Browse project
               </button>
+            </>
+          )}
+          {chatId && !projectId && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <CreateProjectFromChat chatId={chatId} onProjectCreated={onProjectChange} />
             </>
           )}
           {chatId && (
