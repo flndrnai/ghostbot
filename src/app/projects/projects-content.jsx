@@ -75,26 +75,16 @@ export function ProjectsContent() {
         return;
       }
 
-      // Create a new chat with the project name as title, then connect the project
+      // Create an empty chat with the project name, then connect the project
       const project = projects.find((p) => p.id === projectId);
-      const chatRes = await fetch('/stream/chat', {
+      const createRes = await fetch('/api/projects/' + projectId + '/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: crypto.randomUUID(),
-          messages: [{ role: 'user', content: `I'm working on the project "${project?.name || 'Project'}". Read my CLAUDE.md and give me an overview of the current state.` }],
-        }),
+        body: JSON.stringify({ title: project?.name || 'Project' }),
       });
-      const chatId = chatRes.headers.get('X-Chat-Id');
-
-      if (chatId) {
-        // Connect the project to this new chat
-        await fetch(`/api/projects/${projectId}/connect`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chatId }),
-        });
-        router.push(`/chat/${chatId}`);
+      const data = await createRes.json();
+      if (data.chatId) {
+        router.push(`/chat/${data.chatId}`);
       }
     } catch (err) {
       console.error('[projects] open chat failed:', err);
