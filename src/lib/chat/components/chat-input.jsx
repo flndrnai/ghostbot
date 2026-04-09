@@ -369,18 +369,16 @@ export function ChatInput(props) {
               </button>
             </>
           )}
-          {chatId && !projectId && (
+          {!projectId && (
             <>
               <span className="text-muted-foreground/40">·</span>
               <CreateProjectFromChat chatId={chatId} onProjectCreated={onProjectChange} />
             </>
           )}
-          {chatId && (
-            <>
-              <span className="text-muted-foreground/40">·</span>
-              <ProjectSelector chatId={chatId} projectId={projectId} onProjectChange={onProjectChange} />
-            </>
-          )}
+          <>
+            <span className="text-muted-foreground/40">·</span>
+            <ProjectSelector chatId={chatId} projectId={projectId} onProjectChange={onProjectChange} />
+          </>
           <span className="text-muted-foreground/40">·</span>
           <span>
             {agentMode

@@ -18,6 +18,12 @@ export function ProjectSelector({ chatId, projectId, onProjectChange }) {
   }, [open]);
 
   async function connect(pid) {
+    if (!chatId) {
+      // Chat hasn't been created yet — send a message first
+      alert('Send a message first to create the chat, then connect a project.');
+      setOpen(false);
+      return;
+    }
     setLoading(true);
     try {
       await fetch(`/api/projects/${pid}/connect`, {

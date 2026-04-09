@@ -25,12 +25,14 @@ export function CreateProjectFromChat({ chatId, onProjectCreated }) {
       const data = await res.json();
       if (!res.ok || !data.project?.id) throw new Error(data.error || 'Failed to create project');
 
-      // Connect the project to this chat
-      await fetch(`/api/projects/${data.project.id}/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId }),
-      });
+      // Connect the project to this chat (if chat exists)
+      if (chatId) {
+        await fetch(`/api/projects/${data.project.id}/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId }),
+        });
+      }
 
       setOpen(false);
       setName('');
