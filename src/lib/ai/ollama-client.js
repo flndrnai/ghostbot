@@ -10,6 +10,7 @@ export async function* streamOllamaChat({ baseUrl, model, messages, temperature 
     messages: messages.map((m) => ({
       role: m.role === 'system' ? 'system' : m.role === 'assistant' ? 'assistant' : 'user',
       content: String(m.content || ''),
+      ...(Array.isArray(m.images) && m.images.length ? { images: m.images } : {}),
     })),
     stream: true,
     options: { temperature },

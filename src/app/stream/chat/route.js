@@ -19,8 +19,10 @@ export async function POST(request) {
   // Extract the last user message from the array
   const lastUserMessage = [...(messages || [])].reverse().find((m) => m.role === 'user');
   const userText = lastUserMessage?.content || body.message || '';
+  const userImages = Array.isArray(lastUserMessage?.images) && lastUserMessage.images.length
+    ? lastUserMessage.images : null;
 
-  if (!userText.trim()) {
+  if (!userText.trim() && !userImages) {
     return Response.json({ error: 'Message is required' }, { status: 400 });
   }
 
@@ -68,7 +70,7 @@ export async function POST(request) {
   // Run generator to completion regardless of client state
   (async () => {
     try {
-      const generator = chatStream(chatId, userId, userText.trim(), messages);
+      const generator = chatStream(chatId, userId, userText.trim(), messages, userImages);
       for await (const chunk of generator) {
         if (chunk.type === 'text-delta') {
           pushToClient(encoder.encode(`0:"${escapeStreamText(chunk.content)}"\n`));

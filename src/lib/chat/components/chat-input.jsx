@@ -2,9 +2,12 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { ArrowUp, Square, Wrench, MessageSquare } from '../../icons/index.jsx';
+import { X } from 'lucide-react';
 
 // Only embed text-ish files. Hard cap to prevent blowing up the LLM context.
 const MAX_ATTACHMENT_BYTES = 64 * 1024; // 64 KB per file
+const MAX_IMAGE_DATA_URL_LENGTH = Math.round((1024 * 1024) * 4 / 3); // ~1 MB raw → base64 data URL chars
+const MAX_IMAGES = 4;
 const TEXT_EXTENSIONS = new Set([
   'txt', 'md', 'markdown', 'json', 'yaml', 'yml', 'toml', 'ini', 'conf', 'cfg',
   'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs', 'json5',
@@ -29,6 +32,51 @@ function isTextFile(file) {
   return TEXT_EXTENSIONS.has(ext);
 }
 
+function isImageFile(file) {
+  return file && file.type && file.type.startsWith('image/');
+}
+
+/** Read a File/Blob as a data URL string. */
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Resize an image data URL if it exceeds maxBytes. Returns a (possibly smaller) data URL. */
+async function resizeImage(dataUrl, maxLen = MAX_IMAGE_DATA_URL_LENGTH) {
+  if (dataUrl.length <= maxLen) return dataUrl;
+
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+
+  let { width, height } = img;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Progressively shrink until under the limit
+  let quality = 0.8;
+  let result = dataUrl;
+  for (let i = 0; i < 5 && result.length > maxLen; i++) {
+    const scale = Math.sqrt(maxLen / result.length) * 0.9;
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    result = canvas.toDataURL('image/jpeg', quality);
+    quality = Math.max(0.5, quality - 0.1);
+  }
+  return result;
+}
+
 export function ChatInput(props) {
   const input = props.input || '';
   const onInputChange = props.onInputChange;
@@ -37,6 +85,8 @@ export function ChatInput(props) {
   const isLoading = props.isLoading || false;
   const agentMode = !!props.agentMode;
   const onToggleMode = props.onToggleMode;
+  const images = props.images || [];
+  const onImagesChange = props.onImagesChange;
 
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -59,11 +109,52 @@ export function ChatInput(props) {
     });
   }
 
+  async function handleImageFiles(files) {
+    setAttachmentError(null);
+    const currentCount = images.length;
+    const remaining = MAX_IMAGES - currentCount;
+    if (remaining <= 0) {
+      setAttachmentError(`Max ${MAX_IMAGES} images per message`);
+      return;
+    }
+    const toProcess = files.slice(0, remaining);
+    if (files.length > remaining) {
+      setAttachmentError(`Only ${remaining} more image(s) allowed, ${files.length - remaining} skipped`);
+    }
+
+    const newImages = [];
+    for (const file of toProcess) {
+      try {
+        const dataUrl = await readAsDataUrl(file);
+        const resized = await resizeImage(dataUrl);
+        newImages.push(resized);
+      } catch {
+        setAttachmentError('Failed to read image');
+      }
+    }
+    if (newImages.length && typeof onImagesChange === 'function') {
+      onImagesChange([...images, ...newImages]);
+    }
+  }
+
+  function removeImage(index) {
+    if (typeof onImagesChange === 'function') {
+      onImagesChange(images.filter((_, i) => i !== index));
+    }
+  }
+
   async function handleFiles(files) {
     if (!files || files.length === 0) return;
     setAttachmentError(null);
+
+    // Separate images from text files
+    const imageFiles = files.filter(isImageFile);
+    const textFiles = files.filter((f) => !isImageFile(f));
+
+    if (imageFiles.length) await handleImageFiles(imageFiles);
+
     const blocks = [];
-    for (const file of files) {
+    for (const file of textFiles) {
       if (!isTextFile(file)) {
         setAttachmentError(`${file.name}: binary/unknown file type, skipped`);
         continue;
@@ -144,7 +235,7 @@ export function ChatInput(props) {
     }
   }
 
-  const hasValue = input.trim().length > 0;
+  const hasValue = input.trim().length > 0 || images.length > 0;
 
   return (
     <div className="bg-background/80 backdrop-blur-sm px-3 pt-3 pb-3 sm:px-6 sm:pt-5 sm:pb-3 safe-bottom">
@@ -154,6 +245,7 @@ export function ChatInput(props) {
             ref={fileInputRef}
             type="file"
             multiple
+            accept="text/*,image/*,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.json,.yaml,.yml,.toml,.md,.html,.css,.sql,.sh,.c,.cpp,.h"
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -165,7 +257,28 @@ export function ChatInput(props) {
           >
             {dragActive && (
               <div className="absolute inset-0 z-10 rounded-2xl border-2 border-dashed border-primary bg-primary/10 flex items-center justify-center pointer-events-none">
-                <span className="text-sm font-semibold text-primary">Drop to attach as code block</span>
+                <span className="text-sm font-semibold text-primary">Drop to attach</span>
+              </div>
+            )}
+            {/* Image previews */}
+            {images.length > 0 && (
+              <div className="flex gap-2 px-3 pt-3 pb-1 flex-wrap">
+                {images.map((src, i) => (
+                  <div key={i} className="relative group">
+                    <img
+                      src={src}
+                      alt={`Attachment ${i + 1}`}
+                      className="h-16 w-16 object-cover rounded-lg border border-border/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             <textarea
@@ -176,7 +289,7 @@ export function ChatInput(props) {
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={agentMode ? 'Describe the coding task for the agent...' : 'Send a message…  (drop or paste files to attach)'}
+              placeholder={agentMode ? 'Describe the coding task for the agent...' : 'Send a message…  (drop or paste files / images)'}
               rows={1}
               disabled={isLoading}
               autoComplete="off"
@@ -189,6 +302,7 @@ export function ChatInput(props) {
                 transition-all duration-200
                 disabled:opacity-60
                 [&::-webkit-scrollbar]:hidden
+                ${images.length > 0 ? 'rounded-t-none border-t-0' : ''}
                 ${agentMode ? 'border-primary/40' : hasValue ? 'border-primary/20' : 'border-border/60'}
               `}
             />

@@ -12,6 +12,7 @@ function formatMessagesForClient(dbMessages) {
       id: String(msg.id),
       role: msg.role,
       content: msg.content,
+      ...(Array.isArray(msg.images) && msg.images.length ? { images: msg.images } : {}),
       parts: [{ type: 'text', text: msg.content }],
       createdAt: typeof msg.createdAt === 'number' ? msg.createdAt : Date.now(),
     }));

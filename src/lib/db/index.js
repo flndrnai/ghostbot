@@ -80,6 +80,9 @@ function runAutoMigrations(sqlite) {
     // (default), 0 = don't embed or summarize this chat at all.
     addColumnIfMissing(sqlite, 'chats', 'memory_enabled', 'INTEGER NOT NULL DEFAULT 1');
 
+    // Image attachments on chat messages (JSON array of base64 data URLs)
+    addColumnIfMissing(sqlite, 'messages', 'images', 'TEXT');
+
     // User profile fields
     addColumnIfMissing(sqlite, 'users', 'first_name', 'TEXT');
     addColumnIfMissing(sqlite, 'users', 'last_name', 'TEXT');

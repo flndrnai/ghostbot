@@ -52,22 +52,27 @@ export function getChatsByUserId(userId, limit = 50) {
 
 export function getMessagesByChatId(chatId) {
   const db = getDb();
-  return db
+  const rows = db
     .select()
     .from(messages)
     .where(eq(messages.chatId, chatId))
     .orderBy(messages.createdAt)
     .all();
+  return rows.map((r) => ({
+    ...r,
+    images: r.images ? JSON.parse(r.images) : undefined,
+  }));
 }
 
-export function saveMessage(chatId, role, content, id = null) {
+export function saveMessage(chatId, role, content, id = null, images = null) {
   const db = getDb();
   const now = Date.now();
   const messageId = id || crypto.randomUUID();
+  const imagesJson = Array.isArray(images) && images.length ? JSON.stringify(images) : null;
 
   db.transaction((tx) => {
     tx.insert(messages)
-      .values({ id: messageId, chatId, role, content, createdAt: now })
+      .values({ id: messageId, chatId, role, content, images: imagesJson, createdAt: now })
       .run();
 
     tx.update(chats)
@@ -79,7 +84,7 @@ export function saveMessage(chatId, role, content, id = null) {
   publishForChat(chatId, {
     type: 'message:new',
     chatId,
-    message: { id: messageId, chatId, role, content, createdAt: now },
+    message: { id: messageId, chatId, role, content, images: images || undefined, createdAt: now },
   });
 
   return { id: messageId };

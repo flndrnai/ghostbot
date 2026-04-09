@@ -23,6 +23,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
   const [serverStreaming, setServerStreaming] = useState(initialStreaming);
   const [error, setError] = useState(null);
   const [agentMode, setAgentMode] = useState(false);
+  const [pendingImages, setPendingImages] = useState([]);
   const [jobs, setJobs] = useState([]);
 
   // Sync initial messages ONLY when the chat ID actually changes,
@@ -103,6 +104,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
             id: incomingMsg.id,
             role: incomingMsg.role,
             content: incomingMsg.content,
+            images: incomingMsg.images || undefined,
             parts: [{ type: 'text', text: incomingMsg.content }],
             createdAt: incomingMsg.createdAt || Date.now(),
           },
@@ -150,9 +152,11 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
   const handleSend = useCallback(
     async (text) => {
       const message = (text || localInput || '').trim();
-      if (!message || isLoading) return;
+      if ((!message && !pendingImages.length) || isLoading) return;
 
+      const currentImages = pendingImages.length ? [...pendingImages] : undefined;
       setLocalInput('');
+      setPendingImages([]);
       setError(null);
 
       // Agent mode: fire a job instead of a chat stream.
@@ -161,6 +165,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
           id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: 'user',
           content: message,
+          images: currentImages,
           parts: [{ type: 'text', text: message }],
           createdAt: new Date(),
         };
@@ -174,6 +179,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
         id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         role: 'user',
         content: message,
+        images: currentImages,
         parts: [{ type: 'text', text: message }],
         createdAt: new Date(),
       };
@@ -189,6 +195,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
             messages: [...messages, userMessage].map((m) => ({
               role: m.role,
               content: m.content,
+              ...(m.images ? { images: m.images } : {}),
             })),
           }),
         });
@@ -280,7 +287,7 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
         setIsLoading(false);
       }
     },
-    [localInput, isLoading, messages, triggerRefresh, agentMode, handleAgentJob],
+    [localInput, isLoading, messages, pendingImages, triggerRefresh, agentMode, handleAgentJob],
   );
 
   return (
@@ -299,6 +306,8 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
         isLoading={isLoading || serverStreaming}
         agentMode={agentMode}
         onToggleMode={setAgentMode}
+        images={pendingImages}
+        onImagesChange={setPendingImages}
       />
     </div>
   );

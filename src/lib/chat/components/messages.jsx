@@ -188,14 +188,28 @@ export function Messages({ messages = [], isLoading = false, onSuggestion, jobs 
             <div
               className={`max-w-[90%] sm:max-w-[75%] rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm leading-relaxed break-words overflow-hidden ${
                 msg.role === 'user'
-                  ? 'bg-primary/10 text-foreground border border-primary/10 whitespace-pre-wrap'
+                  ? 'bg-primary/10 text-foreground border border-primary/10'
                   : 'bg-muted/60 text-foreground'
               }`}
             >
+              {msg.role === 'user' && Array.isArray(msg.images) && msg.images.length > 0 && (
+                <div className="flex gap-2 flex-wrap mb-2">
+                  {msg.images.map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt={`Attachment ${i + 1}`}
+                      className="max-h-48 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => window.open(src, '_blank')}
+                    />
+                  ))}
+                </div>
+              )}
               {msg.role === 'assistant' ? (
                 <Markdown>{msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''}</Markdown>
               ) : (
-                msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''
+                (msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '') &&
+                <span className="whitespace-pre-wrap">{msg.content || msg.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || ''}</span>
               )}
             </div>
           </div>

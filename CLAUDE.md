@@ -140,6 +140,7 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 ### Productivity
 - ✅ Keyboard shortcuts: `Cmd+B` toggle sidebar, `Cmd+K` focus chat input, `Cmd+Shift+N` new chat, `Cmd+/` help modal
 - ✅ Drag/drop/paste files into chat input — embedded as fenced code blocks
+- ✅ Clipboard image paste — screenshots and images auto-resized, sent to vision-capable LLMs
 - ✅ Chat export to Markdown (download button on each sidebar chat row)
 - ✅ Docs page in user dropdown explaining every admin section
 - ✅ VS Code extension scaffold under `vscode-extension/`
@@ -153,9 +154,7 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 | Light mode polish | Dark mode is the default; nobody uses light yet |
 | Rate limiting on `/api` | Single-user / small group; not getting hammered |
 | VS Code extension v0.2 (deep editor integration: send selection, code lens) | Webview wrapper covers 95% of value |
-| Markdown attachment paste from clipboard images | Only file drop / paste / picker is wired |
 | `/api/agent-jobs/diff` for non-succeeded jobs | Diff comes from GitHub compare which only exists post-push |
-| Drizzle migration generation | Replaced by `runAutoMigrations` in `db/index.js` — much simpler in prod |
 
 ---
 

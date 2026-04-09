@@ -13,25 +13,31 @@ import { getChatAbortSignal } from './live-chats.js';
 const FIRST_TOKEN_TIMEOUT_MS = 120000;  // 2 min for cold model
 const MAX_HISTORY_MESSAGES = 30;
 
+/** Strip the data URL prefix from a base64 image, returning raw base64 for Ollama. */
+function stripDataUrlPrefix(dataUrl) {
+  const idx = dataUrl.indexOf(',');
+  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl;
+}
+
 function buildHistory(clientHistory, chatId, userMessage) {
   if (Array.isArray(clientHistory) && clientHistory.length > 0) {
     return clientHistory
       .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
       .slice(-MAX_HISTORY_MESSAGES)
-      .map((m) => ({ role: m.role, content: m.content }));
+      .map((m) => ({ role: m.role, content: m.content, ...(m.images ? { images: m.images } : {}) }));
   }
   const dbMessages = getMessagesByChatId(chatId) || [];
   const history = dbMessages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .slice(-MAX_HISTORY_MESSAGES)
-    .map((m) => ({ role: m.role, content: m.content }));
+    .map((m) => ({ role: m.role, content: m.content, ...(m.images ? { images: m.images } : {}) }));
   if (!history.length || history[history.length - 1]?.content !== userMessage) {
     history.push({ role: 'user', content: userMessage });
   }
   return history;
 }
 
-export async function* chatStream(chatId, userId, userMessage, clientHistory = null) {
+export async function* chatStream(chatId, userId, userMessage, clientHistory = null, userImages = null) {
   console.log('[chatStream] start', { chatId, userId, msgLen: userMessage?.length });
 
   let chat = getChatById(chatId);
@@ -42,8 +48,8 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     console.log('[chatStream] existing chat', { chatId, chatUserId: chat.userId });
   }
 
-  saveMessage(chatId, 'user', userMessage);
-  console.log('[chatStream] user message saved');
+  saveMessage(chatId, 'user', userMessage, null, userImages);
+  console.log('[chatStream] user message saved', userImages ? `with ${userImages.length} image(s)` : '');
 
   const provider = getConfig('LLM_PROVIDER') || 'ollama';
   let model = getConfig('LLM_MODEL') || '';
@@ -122,10 +128,18 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     }
 
     try {
+      // Attach images (raw base64) to messages for Ollama vision models
+      const ollamaMessages = messagesForLLM.map((m) => {
+        if (m.images && Array.isArray(m.images) && m.images.length) {
+          return { ...m, images: m.images.map(stripDataUrlPrefix) };
+        }
+        return m;
+      });
+
       const stream = streamOllamaChat({
         baseUrl,
         model,
-        messages: messagesForLLM,
+        messages: ollamaMessages,
         temperature,
         signal: ctrl.signal,
       });
@@ -178,6 +192,15 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     const lcMessages = messagesForLLM.map((m) => {
       if (m.role === 'system') return new SystemMessage(m.content);
       if (m.role === 'assistant') return new AIMessage(m.content);
+      // Multipart content for messages with images (vision)
+      if (m.images && Array.isArray(m.images) && m.images.length) {
+        return new HumanMessage({
+          content: [
+            { type: 'text', text: m.content || '' },
+            ...m.images.map((url) => ({ type: 'image_url', image_url: { url } })),
+          ],
+        });
+      }
       return new HumanMessage(m.content);
     });
 
