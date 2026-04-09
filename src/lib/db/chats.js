@@ -139,3 +139,23 @@ export function toggleChatStarred(chatId) {
     .run();
   publish(chat.userId, { type: 'chat:updated', chatId, fields: { starred, updatedAt: now } });
 }
+
+export function connectProjectToChat(chatId, projectId) {
+  const db = getDb();
+  const now = Date.now();
+  db.update(chats)
+    .set({ projectId, updatedAt: now })
+    .where(eq(chats.id, chatId))
+    .run();
+  publishForChat(chatId, { type: 'chat:updated', chatId, fields: { projectId, updatedAt: now } });
+}
+
+export function disconnectProjectFromChat(chatId) {
+  const db = getDb();
+  const now = Date.now();
+  db.update(chats)
+    .set({ projectId: null, updatedAt: now })
+    .where(eq(chats.id, chatId))
+    .run();
+  publishForChat(chatId, { type: 'chat:updated', chatId, fields: { projectId: null, updatedAt: now } });
+}

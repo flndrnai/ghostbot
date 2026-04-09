@@ -7,9 +7,12 @@
 // immediately; the container runs in the background.
 
 import http from 'http';
+import path from 'path';
 import { getConfig } from '../config.js';
 import { getConfigSecret } from '../db/config.js';
-import { dockerApi, DockerFrameParser } from '../tools/docker.js';
+import { dockerApi, DockerFrameParser, resolveHostPath } from '../tools/docker.js';
+import { getChatById } from '../db/chats.js';
+import { getProjectById, resolveProjectPath } from '../db/projects.js';
 import {
   createAgentJob,
   updateAgentJob,
@@ -25,12 +28,29 @@ export async function launchAgentJob({
   agent = 'aider',
   baseBranch = 'main',
 }) {
-  // Validate GitHub config up front so we fail loud before spawning
-  const ghToken = getConfigSecret('GH_TOKEN');
-  const owner = getConfig('GH_OWNER');
-  const repoName = getConfig('GH_REPO');
-  if (!ghToken || !owner || !repoName) {
-    throw new Error('GitHub not configured. Go to Admin > GitHub and save a token + owner/repo.');
+  // Check if this chat has a connected project (local project mode)
+  let projectPath = null;
+  if (chatId) {
+    const chat = getChatById(chatId);
+    if (chat?.projectId) {
+      const project = getProjectById(chat.projectId);
+      if (project) projectPath = resolveProjectPath(project.path);
+    }
+  }
+
+  // GitHub mode: require GitHub config
+  let ghToken, repo, branch;
+  if (!projectPath) {
+    ghToken = getConfigSecret('GH_TOKEN');
+    const owner = getConfig('GH_OWNER');
+    const repoName = getConfig('GH_REPO');
+    if (!ghToken || !owner || !repoName) {
+      throw new Error('GitHub not configured. Go to Admin > GitHub and save a token + owner/repo.');
+    }
+    repo = `${owner}/${repoName}`;
+  } else {
+    repo = 'local/project';
+    ghToken = '';
   }
 
   const ollamaBaseUrl = (getConfig('OLLAMA_BASE_URL') || '').replace(/\/+$/, '');
@@ -39,9 +59,8 @@ export async function launchAgentJob({
     throw new Error('LLM not configured. Go to Admin > LLM Providers and pick a model.');
   }
 
-  const repo = `${owner}/${repoName}`;
   const jobId = crypto.randomUUID();
-  const branch = `agent-job/${jobId.slice(0, 8)}-${Date.now()}`;
+  branch = projectPath ? 'local' : `agent-job/${jobId.slice(0, 8)}-${Date.now()}`;
   const image = `ghostbot:coding-agent-${agent}`;
   const containerName = `ghostbot-job-${jobId.slice(0, 12)}`;
 
@@ -59,7 +78,7 @@ export async function launchAgentJob({
 
   // Base env shared by every agent
   const baseEnv = [
-    `GH_TOKEN=${ghToken}`,
+    `GH_TOKEN=${ghToken || ''}`,
     `GH_REPO=${repo}`,
     `GH_BRANCH=${branch}`,
     `BASE_BRANCH=${baseBranch}`,
@@ -69,12 +88,19 @@ export async function launchAgentJob({
   // Agent-specific env
   const extraEnv = buildAgentEnv(agent, { ollamaBaseUrl, model });
 
+  // Resolve host path for project mount (Docker needs the host-side path)
+  let hostProjectPath = null;
+  if (projectPath) {
+    hostProjectPath = await resolveHostPath(projectPath);
+  }
+
   // Kick off the container in the background; don't await
   runJobContainer({
     jobId,
     containerName,
     image,
     env: [...baseEnv, ...extraEnv],
+    hostProjectPath,
   }).catch((err) => {
     console.error('[agent-job] background runner crashed:', err);
     updateAgentJob(jobId, {
@@ -133,7 +159,7 @@ function buildAgentEnv(agent, { ollamaBaseUrl, model }) {
   }
 }
 
-async function runJobContainer({ jobId, containerName, image, env }) {
+async function runJobContainer({ jobId, containerName, image, env, hostProjectPath = null }) {
   updateAgentJob(jobId, { status: 'running', startedAt: Date.now() });
   notifyAgentJob('started', getAgentJob(jobId)).catch(() => {});
 
@@ -149,13 +175,16 @@ async function runJobContainer({ jobId, containerName, image, env }) {
     return;
   }
 
-  // Create the container
+  // Create the container (with optional project folder bind mount)
+  const hostConfig = { AutoRemove: false };
+  if (hostProjectPath) {
+    hostConfig.Binds = [`${hostProjectPath}:/home/coding-agent/workspace`];
+  }
+
   const createRes = await dockerApi('POST', `/containers/create?name=${encodeURIComponent(containerName)}`, {
     Image: image,
     Env: env,
-    HostConfig: {
-      AutoRemove: false, // we'll delete it manually after grabbing logs
-    },
+    HostConfig: hostConfig,
   });
   if (createRes.status !== 201) {
     updateAgentJob(jobId, {

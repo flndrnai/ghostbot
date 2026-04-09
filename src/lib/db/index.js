@@ -68,6 +68,22 @@ function runAutoMigrations(sqlite) {
       );
     `);
 
+    // Projects table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+
+    // Link chats to projects
+    addColumnIfMissing(sqlite, 'chats', 'project_id', 'TEXT');
+
     addColumnIfMissing(sqlite, 'knowledge_entries', 'user_id', 'TEXT');
     addColumnIfMissing(sqlite, 'knowledge_entries', 'embedding', 'TEXT');
     addColumnIfMissing(sqlite, 'knowledge_entries', 'embedding_model', 'TEXT');

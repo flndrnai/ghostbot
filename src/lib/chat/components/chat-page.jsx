@@ -18,7 +18,7 @@ function MobileHeader() {
   );
 }
 
-export function ChatPage({ session, chatId, initialMessages, initialStreaming = false }) {
+export function ChatPage({ session, chatId, initialMessages, initialStreaming = false, projectId = null }) {
   return (
     <ChatNavProvider>
       <SidebarProvider>
@@ -32,6 +32,7 @@ export function ChatPage({ session, chatId, initialMessages, initialStreaming = 
                 initialMessages={initialMessages}
                 initialStreaming={initialStreaming}
                 session={session}
+                initialProjectId={projectId}
               />
             </ChatErrorBoundary>
           </div>

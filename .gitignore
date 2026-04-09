@@ -1,5 +1,6 @@
 # Reference source (read-only, do not push)
 thepopebot-main/
+aios-main/
 
 # Dependencies
 node_modules/

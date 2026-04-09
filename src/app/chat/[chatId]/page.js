@@ -49,5 +49,5 @@ export default async function ChatIdPage({ params }) {
   const initialStreaming = isChatStreaming(chatId);
   console.log('[chat-page] initialMessages count:', initialMessages.length, 'streaming:', initialStreaming);
 
-  return <ChatPage session={session} chatId={chatId} initialMessages={initialMessages} initialStreaming={initialStreaming} />;
+  return <ChatPage session={session} chatId={chatId} initialMessages={initialMessages} initialStreaming={initialStreaming} projectId={chat.projectId || null} />;
 }

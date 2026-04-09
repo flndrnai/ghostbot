@@ -5,10 +5,13 @@ import { setConfig } from '../config.js';
 import { TokenCounter } from './token-counter.js';
 import { getConfig } from '../config.js';
 import { getChatById, createChat, saveMessage, updateChatTitle, getMessagesByChatId } from '../db/chats.js';
+import { getProjectById, resolveProjectPath } from '../db/projects.js';
 import { recordTokenUsage } from '../db/token-usage.js';
 import { searchChatSummaries } from '../memory/store.js';
 import { summarizeChat } from '../memory/summarize.js';
 import { getChatAbortSignal } from './live-chats.js';
+import fs from 'fs';
+import path from 'path';
 
 const FIRST_TOKEN_TIMEOUT_MS = 120000;  // 2 min for cold model
 const MAX_HISTORY_MESSAGES = 30;
@@ -90,6 +93,26 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
       }
     } catch (err) {
       console.error('[chatStream] memory retrieval failed:', err.message);
+    }
+  }
+
+  // ========= PROJECT CONTEXT (CLAUDE.md) =========
+  // If the chat is connected to a project, inject the project's
+  // CLAUDE.md into the system prompt so the LLM understands the
+  // codebase, architecture, conventions, and current status.
+  if (chat?.projectId) {
+    try {
+      const project = getProjectById(chat.projectId);
+      if (project) {
+        const claudeMdPath = path.join(resolveProjectPath(project.path), 'CLAUDE.md');
+        if (fs.existsSync(claudeMdPath)) {
+          const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 8000); // cap at 8KB
+          systemPrompt += `\n\nProject: ${project.name}\n${claudeMd}`;
+          console.log('[chatStream] injected project CLAUDE.md', { projectId: project.id, name: project.name });
+        }
+      }
+    } catch (err) {
+      console.error('[chatStream] project context injection failed:', err.message);
     }
   }
 

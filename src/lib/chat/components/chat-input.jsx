@@ -2,7 +2,8 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { ArrowUp, Square, Wrench, MessageSquare } from '../../icons/index.jsx';
-import { X } from 'lucide-react';
+import { X, FolderOpen } from 'lucide-react';
+import { ProjectSelector } from './project-selector.jsx';
 
 // Only embed text-ish files. Hard cap to prevent blowing up the LLM context.
 const MAX_ATTACHMENT_BYTES = 64 * 1024; // 64 KB per file
@@ -87,6 +88,10 @@ export function ChatInput(props) {
   const onToggleMode = props.onToggleMode;
   const images = props.images || [];
   const onImagesChange = props.onImagesChange;
+  const projectId = props.projectId;
+  const chatId = props.chatId;
+  const onProjectChange = props.onProjectChange;
+  const onToggleFileTree = props.onToggleFileTree;
 
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -342,7 +347,7 @@ export function ChatInput(props) {
         {attachmentError && (
           <p className="mt-2 text-center text-[11px] text-destructive">{attachmentError}</p>
         )}
-        <div className="flex items-center justify-center gap-3 text-xs text-foreground/80 my-5">
+        <div className="flex items-center justify-center gap-3 text-xs text-foreground/80 my-5 flex-wrap">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -350,6 +355,25 @@ export function ChatInput(props) {
           >
             Attach file
           </button>
+          {projectId && onToggleFileTree && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <button
+                type="button"
+                onClick={onToggleFileTree}
+                className="flex items-center gap-1 underline underline-offset-2 hover:text-primary cursor-pointer"
+              >
+                <FolderOpen className="h-3 w-3" />
+                Browse project
+              </button>
+            </>
+          )}
+          {chatId && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <ProjectSelector chatId={chatId} projectId={projectId} onProjectChange={onProjectChange} />
+            </>
+          )}
           <span className="text-muted-foreground/40">·</span>
           <span>
             {agentMode

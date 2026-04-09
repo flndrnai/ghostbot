@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Messages } from './messages.jsx';
 import { ChatInput } from './chat-input.jsx';
+import { FileTree } from './file-tree.jsx';
+import { ProjectSelector } from './project-selector.jsx';
 import { useChatNav } from './chat-nav-context.jsx';
 
 function sanitizeMessages(arr) {
@@ -11,7 +13,7 @@ function sanitizeMessages(arr) {
   );
 }
 
-export function Chat({ chatId: initialChatId, initialMessages = [], initialStreaming = false, session }) {
+export function Chat({ chatId: initialChatId, initialMessages = [], initialStreaming = false, session, initialProjectId = null }) {
   const { triggerRefresh, registerMessageHandler, registerAgentJobHandler, registerStreamingHandler } = useChatNav();
   const chatIdRef = useRef(initialChatId || null);
   const [localInput, setLocalInput] = useState('');
@@ -24,6 +26,8 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
   const [error, setError] = useState(null);
   const [agentMode, setAgentMode] = useState(false);
   const [pendingImages, setPendingImages] = useState([]);
+  const [projectId, setProjectId] = useState(initialProjectId);
+  const [showFileTree, setShowFileTree] = useState(!!initialProjectId);
   const [jobs, setJobs] = useState([]);
 
   // Sync initial messages ONLY when the chat ID actually changes,
@@ -290,25 +294,51 @@ export function Chat({ chatId: initialChatId, initialMessages = [], initialStrea
     [localInput, isLoading, messages, pendingImages, triggerRefresh, agentMode, handleAgentJob],
   );
 
+  function handleFileAttach(block) {
+    const nextValue = (localInput || '').trimEnd() + block;
+    setLocalInput(nextValue);
+  }
+
+  function handleProjectChange(newProjectId) {
+    setProjectId(newProjectId);
+    setShowFileTree(!!newProjectId);
+  }
+
   return (
-    <div className="flex h-full flex-col">
-      <Messages messages={messages} isLoading={isLoading || serverStreaming} onSuggestion={handleSend} jobs={jobs} />
-      {error && (
-        <div className="mx-4 mb-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-          {error.message || 'Something went wrong. Please try again.'}
+    <div className="flex h-full">
+      {/* File tree panel — shown when a project is connected */}
+      {projectId && showFileTree && (
+        <div className="hidden md:flex w-64 flex-shrink-0">
+          <FileTree
+            projectId={projectId}
+            onFileAttach={handleFileAttach}
+            onClose={() => setShowFileTree(false)}
+          />
         </div>
       )}
-      <ChatInput
-        input={localInput}
-        onInputChange={setLocalInput}
-        onSend={handleSend}
-        onStop={handleStop}
-        isLoading={isLoading || serverStreaming}
-        agentMode={agentMode}
-        onToggleMode={setAgentMode}
-        images={pendingImages}
-        onImagesChange={setPendingImages}
-      />
+      <div className="flex flex-1 flex-col min-w-0">
+        <Messages messages={messages} isLoading={isLoading || serverStreaming} onSuggestion={handleSend} jobs={jobs} />
+        {error && (
+          <div className="mx-4 mb-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+            {error.message || 'Something went wrong. Please try again.'}
+          </div>
+        )}
+        <ChatInput
+          input={localInput}
+          onInputChange={setLocalInput}
+          onSend={handleSend}
+          onStop={handleStop}
+          isLoading={isLoading || serverStreaming}
+          agentMode={agentMode}
+          onToggleMode={setAgentMode}
+          images={pendingImages}
+          onImagesChange={setPendingImages}
+          projectId={projectId}
+          chatId={chatIdRef.current}
+          onProjectChange={handleProjectChange}
+          onToggleFileTree={() => setShowFileTree(!showFileTree)}
+        />
+      </div>
     </div>
   );
 }

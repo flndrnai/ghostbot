@@ -145,6 +145,15 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 - ✅ Docs page in user dropdown explaining every admin section
 - ✅ VS Code extension scaffold under `vscode-extension/`
 
+### Projects
+- ✅ Project Connect: create/manage project folders on the server
+- ✅ File tree panel in chat with click-to-attach
+- ✅ Project selector to connect/disconnect projects from chats
+- ✅ CLAUDE.md auto-injected into system prompt when project is connected
+- ✅ Agent jobs mount project folder into Docker container (no GitHub needed)
+- ✅ `/projects` list page with create, rename, delete
+- ✅ Safe file system API with path traversal protection
+
 ---
 
 ## What's parked

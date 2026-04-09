@@ -38,6 +38,7 @@ export const chats = sqliteTable('chats', {
   starred: integer('starred').notNull().default(0),
   chatMode: text('chat_mode').notNull().default('agent'),
   codeWorkspaceId: text('code_workspace_id'),
+  projectId: text('project_id'),
   memoryEnabled: integer('memory_enabled').notNull().default(1),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
@@ -158,6 +159,17 @@ export const chatSummaries = sqliteTable('chat_summaries', {
   embedding: text('embedding'),         // JSON array of floats
   embeddingModel: text('embedding_model'),
   createdAt: integer('created_at').notNull(),
+});
+
+// Projects — user-owned project folders for the coding agent
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  path: text('path').notNull(),
+  description: text('description').default(''),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
 });
 
 export const agentJobs = sqliteTable('agent_jobs', {
