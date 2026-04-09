@@ -180,7 +180,7 @@ ghostbot/
 
 ## Self-hosted LLM (Ollama)
 
-GhostBot is built for self-hosted AI first. The Admin → Ollama page auto-discovers installed models via `/api/tags`, lets you click Set Active on any of them, and tests the connection on every page load.
+GhostBot is built for self-hosted AI first and works with **any Ollama model** — not just the ones recommended below. Just `ollama pull <model>` on your Ollama machine and it automatically appears in the admin panel. Browse all available models at [ollama.com/library](https://ollama.com/library). The Admin → Ollama page auto-discovers every installed model via `/api/tags`, lets you click Set Active on any of them, and tests the connection on every page load.
 
 For the full setup walkthrough including the cost-vs-cloud comparison and the KVM8 VPS migration checklist, see **[docs/OLLAMA_QWEN_SETUP.md](docs/OLLAMA_QWEN_SETUP.md)**.
 

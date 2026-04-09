@@ -126,6 +126,13 @@ export function DocsContent() {
                 {' '}(e.g. <code>qwen2.5-coder:7b</code>), click <strong>Save & Apply</strong>. The card flips
                 to a green Connected state. Use Disconnect to clear and start over.
               </Block>
+              <Block label="Any Ollama model works">
+                GhostBot is not locked to any specific model. You can use <strong>any model</strong> available
+                on <a className="text-primary underline" href="https://ollama.com/library" target="_blank" rel="noopener noreferrer">ollama.com/library</a> —
+                Llama, Mistral, DeepSeek, CodeStral, Phi, Gemma, or anything else. Just run{' '}
+                <code>ollama pull &lt;model&gt;</code> on your Ollama machine and it automatically appears
+                in the admin panel. No config files to edit.
+              </Block>
             </Section>
 
             <Section id="ollama" title="2. Ollama Setup">
@@ -149,12 +156,18 @@ export function DocsContent() {
               </Block>
               <Block label="How to use">
                 <ol className="list-decimal pl-5 space-y-1.5">
-                  <li>Install Ollama on your VPS (<code>curl -fsSL https://ollama.com/install.sh | sh</code>)</li>
-                  <li>Pull a model (<code>ollama pull qwen2.5-coder:7b</code>)</li>
+                  <li>Install Ollama on your VPS or local machine (<code>curl -fsSL https://ollama.com/install.sh | sh</code>)</li>
+                  <li>Pull any model you want: <code>ollama pull &lt;model&gt;</code> (e.g. <code>ollama pull llama3</code>, <code>ollama pull mistral</code>, <code>ollama pull qwen2.5-coder:7b</code>)</li>
+                  <li>Pull the embedding model for memory: <code>ollama pull nomic-embed-text</code></li>
                   <li>Expose port 11434 to your GhostBot server (firewall it to that IP only)</li>
-                  <li>Paste the URL here, click Test & Save, then Set Active on the model</li>
+                  <li>Paste the URL here, click Test & Save — all installed models appear automatically</li>
+                  <li>Click <strong>Set Active</strong> on the model you want to use</li>
                 </ol>
-                See <code>docs/OLLAMA_QWEN_SETUP.md</code> in the repo for the full migration guide.
+                <p className="mt-2">
+                  You can switch models at any time — just pull a new one and click Set Active. Browse all available
+                  models at <a className="text-primary underline" href="https://ollama.com/library" target="_blank" rel="noopener noreferrer">ollama.com/library</a>.
+                </p>
+                <p>See <code>docs/OLLAMA_QWEN_SETUP.md</code> in the repo for the full setup guide.</p>
               </Block>
             </Section>
 
@@ -196,10 +209,15 @@ export function DocsContent() {
                 coding agent configured.
               </Block>
               <Block label="How to use">
-                For now, this is informational — agent images are baked into the Docker setup.
-                When you launch an agent job from chat, GhostBot picks the active agent from
-                the <code>CODING_AGENT</code> config. We&apos;ll wire individual agent auth in a later
-                step (Claude Code OAuth, Codex API key, etc.).
+                Agent images are baked into the Docker setup. When you launch an agent job from
+                chat, GhostBot picks the active agent from the <code>CODING_AGENT</code> config.
+              </Block>
+              <Block label="Which model do agents use?">
+                Coding agents use whatever LLM is currently set as active in <strong>LLM Providers</strong>.
+                If you&apos;re using Ollama, the agent gets the same model you selected there. To use a
+                different model for agents vs. chat, switch the active model in LLM Providers before
+                launching the job. Any Ollama model works — just <code>ollama pull &lt;model&gt;</code> on
+                your Ollama machine and set it active.
               </Block>
             </Section>
 
