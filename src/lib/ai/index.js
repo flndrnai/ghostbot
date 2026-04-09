@@ -129,8 +129,12 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
         const claudeMdPath = path.join(resolveProjectPath(project.path), 'CLAUDE.md');
         if (fs.existsSync(claudeMdPath)) {
           const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 8000); // cap at 8KB
+          const isNewProject = claudeMd.includes('NEW_PROJECT');
           systemPrompt += `\n\nProject: ${project.name}\n${claudeMd}`;
-          console.log('[chatStream] injected project CLAUDE.md', { projectId: project.id, name: project.name });
+          if (isNewProject) {
+            systemPrompt += `\n\nIMPORTANT: This is a brand new project with no code yet. The CLAUDE.md is a blank template. Your first priority when the user describes what they want to build is to:\n1. Clarify requirements if needed (tech stack, features, scope)\n2. Propose the architecture and conventions\n3. Once confirmed, update the CLAUDE.md with the real project details\n4. Then start building the project step by step\nDo NOT assume anything is already set up. Ask the user what they want to build.`;
+          }
+          console.log('[chatStream] injected project CLAUDE.md', { projectId: project.id, name: project.name, isNew: isNewProject });
         }
       }
     } catch (err) {

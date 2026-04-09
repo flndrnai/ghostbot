@@ -9,23 +9,30 @@ const PROJECTS_DIR = path.join(PROJECT_ROOT, 'data', 'projects');
 
 const CLAUDE_MD_TEMPLATE = (name) => `# ${name}
 
+<!-- NEW_PROJECT: This is a fresh project. The sections below are empty placeholders.
+     When the user describes what they want to build, fill in this CLAUDE.md first:
+     1. Ask what they want to build if not clear
+     2. Fill in Architecture, Tech Stack, and Conventions based on their description
+     3. Then start building the project
+     Always update this file as the project evolves. -->
+
 ## Architecture
-(describe your project structure here)
+(not yet defined — waiting for user instructions)
 
 ## Tech Stack
-(frameworks, languages, tools)
+(not yet defined)
 
 ## Conventions
-(coding conventions, patterns, naming rules)
+(not yet defined)
 
 ## What's Shipped
-(features and modules that are complete)
+(nothing yet — new project)
 
 ## What's In Progress
-(current work)
+(nothing yet)
 
 ## What's Parked
-(deferred items and why)
+(nothing yet)
 `;
 
 export function createProject({ userId, name, description = '' }) {
