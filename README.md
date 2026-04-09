@@ -12,6 +12,7 @@ Repo: **[github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot)**
 - **Chat with any LLM** — Anthropic, OpenAI, Google, or your own self-hosted Ollama (Qwen 2.5 Coder etc.)
 - **Real-time cross-device sync** — Open on laptop and phone simultaneously, every chat and message syncs over SSE
 - **Markdown chat rendering** — Code blocks with copy buttons, tables, lists, inline highlighting
+- **Image paste + vision** — Paste screenshots from clipboard, auto-resized to ~1 MB, sent to vision-capable LLMs (Ollama multimodal, Anthropic, OpenAI, Google)
 - **Self-learning memory** — Each chat is auto-summarized + embedded; future chats retrieve relevant past context automatically (RAG)
 - **Coding agents in Docker** — Aider, OpenCode, Codex, Gemini CLI. Fire from chat → agent clones repo, edits code, opens a PR, pings you
 - **Cluster pipelines** — Chain multiple agent roles together (planner → reviewer → coder → tester) with one-click templates
@@ -164,7 +165,7 @@ ghostbot/
 | `users` | Accounts with role (admin / user) |
 | `invitations` | One-time signup tokens for multi-user |
 | `chats` | Chat sessions, with per-chat `memory_enabled` opt-out |
-| `messages` | Chat messages |
+| `messages` | Chat messages (text + optional base64 image attachments) |
 | `chat_summaries` | Auto-generated 2-3 sentence recaps + embeddings |
 | `knowledge_entries` | Manual or auto-saved knowledge with embeddings |
 | `agent_jobs` | Coding agent runs (status, output, PR URL) |

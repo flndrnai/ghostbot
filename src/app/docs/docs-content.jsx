@@ -22,7 +22,7 @@ const SECTIONS = [
   { id: 'clusters', label: 'Clusters' },
   { id: 'agent-jobs', label: 'Agent Jobs (chat)' },
   { id: 'shortcuts', label: 'Keyboard shortcuts' },
-  { id: 'attachments', label: 'File attachments' },
+  { id: 'attachments', label: 'File & image attachments' },
   { id: 'vscode', label: 'VS Code extension' },
   { id: 'setup-checklist', label: 'Setup order' },
 ];
@@ -534,12 +534,23 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="attachments" title="18. File attachments in chat">
-              <Block label="What it does">
-                Drop, paste, or click-to-attach a text file into the chat input. Its contents get embedded as a fenced code block with the filename and language hint, ready to send to the LLM.
+            <Section id="attachments" title="18. File & image attachments in chat">
+              <Block label="Text files">
+                Drop, paste, or click-to-attach a text file into the chat input. Its contents get embedded as a fenced code block with the filename and language hint, ready to send to the LLM. Limit: 64 KB per file. Recognized text extensions cover JS/TS/Python/Go/Rust/Java/Markdown/YAML/JSON/SQL/Shell/Dockerfile and many more.
               </Block>
-              <Block label="Limits">
-                64 KB per file. Binary or unsupported file types are skipped with an inline error. Recognized text extensions cover JS/TS/Python/Go/Rust/Java/Markdown/YAML/JSON/SQL/Shell/Dockerfile and many more.
+              <Block label="Image paste (vision)">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Paste a screenshot or image from clipboard (<kbd>Cmd+V</kbd>) or drag-and-drop image files</li>
+                  <li>Thumbnail previews appear above the text input with an X button to remove</li>
+                  <li>Images over 1 MB are automatically resized via canvas compression</li>
+                  <li>Up to 4 images per message</li>
+                  <li>Images are sent to vision-capable LLMs (Ollama multimodal, Anthropic, OpenAI, Google)</li>
+                  <li>Images persist in the database and sync across devices in real time</li>
+                  <li>Click any image in a message bubble to open it full-size in a new tab</li>
+                </ul>
+              </Block>
+              <Block label="Notes">
+                Text-only models will ignore image attachments gracefully. For best results with images, use a vision-capable model (e.g. <code>llava</code>, <code>llama3.2-vision</code> on Ollama, or any Claude/GPT-4/Gemini model).
               </Block>
             </Section>
 
