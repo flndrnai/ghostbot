@@ -19,6 +19,7 @@ const SECTIONS = [
   { id: 'memory', label: 'Memory' },
   { id: 'backup', label: 'Backup' },
   { id: 'users', label: 'Users' },
+  { id: 'projects', label: 'Projects' },
   { id: 'clusters', label: 'Clusters' },
   { id: 'agent-jobs', label: 'Agent Jobs (chat)' },
   { id: 'shortcuts', label: 'Keyboard shortcuts' },
@@ -431,7 +432,44 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="clusters" title="11. Clusters">
+            <Section id="projects" title="11. Projects">
+              <Block label="What it is">
+                A project folder that GhostBot can browse, read, edit, and work on directly. Each project gets a <code>CLAUDE.md</code> file as its living source of truth — like a brain that tells GhostBot what the project is, how it works, and what state it&apos;s in.
+              </Block>
+              <Block label="What it does">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Creates a project folder on the server at <code>data/projects/&lt;id&gt;/</code></li>
+                  <li>Auto-generates a <code>CLAUDE.md</code> template with architecture, conventions, and status sections</li>
+                  <li>Connect any project to any chat — the <code>CLAUDE.md</code> is automatically injected into the system prompt</li>
+                  <li>File tree panel appears alongside the chat when a project is connected</li>
+                  <li>Click any file in the tree to attach its content as a code block in the chat</li>
+                  <li>Agent jobs can mount the project folder directly into Docker — no GitHub clone needed</li>
+                </ul>
+              </Block>
+              <Block label="How to use">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Go to <a className="text-primary underline" href="/projects">/projects</a> and create a new project</li>
+                  <li>Open any chat and click <strong>Connect project</strong> below the chat input</li>
+                  <li>Select your project — the file tree appears on the left and <code>CLAUDE.md</code> is loaded into context</li>
+                  <li>Ask GhostBot about the project, click files to attach them, or switch to agent mode to run coding agents directly on the project files</li>
+                  <li>Click <strong>Browse project</strong> to toggle the file tree panel</li>
+                </ol>
+              </Block>
+              <Block label="CLAUDE.md">
+                The <code>CLAUDE.md</code> is the most important file in any project. Keep it updated with:
+                <ul className="list-disc pl-5 space-y-1 mt-2">
+                  <li><strong>Architecture</strong> — how the project is structured</li>
+                  <li><strong>Tech stack</strong> — frameworks, languages, tools</li>
+                  <li><strong>Conventions</strong> — coding patterns, naming rules</li>
+                  <li><strong>What&apos;s shipped</strong> — completed features</li>
+                  <li><strong>What&apos;s in progress</strong> — current work</li>
+                  <li><strong>What&apos;s parked</strong> — deferred items and why</li>
+                </ul>
+                <p className="mt-2">The more detailed your CLAUDE.md, the better GhostBot understands and works on your project.</p>
+              </Block>
+            </Section>
+
+            <Section id="clusters" title="12. Clusters">
               <Block label="What it is">
                 A higher-level orchestration layer above individual agent jobs. A cluster is a
                 named group of workers, each with a role and trigger configuration, that
@@ -459,7 +497,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="slack" title="12. Slack">
+            <Section id="slack" title="13. Slack">
               <Block label="What it is">
                 Parallel to Telegram. Posts agent-job lifecycle pings (started, succeeded, failed) to a Slack channel.
               </Block>
@@ -474,7 +512,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="memory" title="13. Memory">
+            <Section id="memory" title="14. Memory">
               <Block label="What it is">
                 The self-learning layer that makes GhostBot different from a regular chat. Every finished chat is auto-summarized into 2-3 sentences with topic tags, embedded into a vector, and stored. When you start a new chat, GhostBot embeds your first message and pulls the top-3 most relevant past summaries into the system prompt — so it remembers context across conversations.
               </Block>
@@ -486,7 +524,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="backup" title="14. Backup">
+            <Section id="backup" title="15. Backup">
               <Block label="What it is">
                 One-click JSON export of the whole GhostBot database (every non-secret table) plus the list of installed coding-agent Docker images on the host.
               </Block>
@@ -498,7 +536,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="users" title="15. Users">
+            <Section id="users" title="16. Users">
               <Block label="What it is">
                 Multi-user invitation flow. Each user has isolated chats, agent jobs, memory, and clusters.
               </Block>
@@ -516,7 +554,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="agent-jobs" title="16. Agent Jobs from chat">
+            <Section id="agent-jobs" title="17. Agent Jobs from chat">
               <Block label="What it is">
                 A toggle in the chat input that switches the next message from a chat reply into an autonomous coding-agent job. The agent clones your repo, edits code, commits, pushes, and opens a PR.
               </Block>
@@ -534,7 +572,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="shortcuts" title="17. Keyboard shortcuts">
+            <Section id="shortcuts" title="18. Keyboard shortcuts">
               <Block label="Global">
                 <ul className="list-disc pl-5 space-y-1">
                   <li><kbd>⌘ B</kbd> — toggle sidebar</li>
@@ -552,7 +590,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="attachments" title="18. File & image attachments in chat">
+            <Section id="attachments" title="19. File & image attachments in chat">
               <Block label="Text files">
                 Drop, paste, or click-to-attach a text file into the chat input. Its contents get embedded as a fenced code block with the filename and language hint, ready to send to the LLM. Limit: 64 KB per file. Recognized text extensions cover JS/TS/Python/Go/Rust/Java/Markdown/YAML/JSON/SQL/Shell/Dockerfile and many more.
               </Block>
@@ -572,7 +610,7 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="vscode" title="19. VS Code extension">
+            <Section id="vscode" title="20. VS Code extension">
               <Block label="What it is">
                 A VS Code extension that mounts your live GhostBot UI inside the editor as a sidebar panel. Same login session, same chat, same agents, same memory.
               </Block>

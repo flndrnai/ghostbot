@@ -14,7 +14,8 @@ Repo: **[github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot)**
 - **Markdown chat rendering** — Code blocks with copy buttons, tables, lists, inline highlighting
 - **Image paste + vision** — Paste screenshots from clipboard, auto-resized to ~1 MB, sent to vision-capable LLMs (Ollama multimodal, Anthropic, OpenAI, Google)
 - **Self-learning memory** — Each chat is auto-summarized + embedded; future chats retrieve relevant past context automatically (RAG)
-- **Coding agents in Docker** — Aider, OpenCode, Codex, Gemini CLI. Fire from chat → agent clones repo, edits code, opens a PR, pings you
+- **Project Connect** — Connect a project folder to any chat. Browse the file tree, click to attach files, and launch coding agents directly on your project. Every project gets a `CLAUDE.md` as its living source of truth, auto-injected into the system prompt
+- **Coding agents in Docker** — Aider, OpenCode, Codex, Gemini CLI. Fire from chat → agent clones repo, edits code, opens a PR, pings you. Or mount a connected project folder directly — no GitHub needed
 - **Cluster pipelines** — Chain multiple agent roles together (planner → reviewer → coder → tester) with one-click templates
 - **GitHub PR comments → agent jobs** — Comment `/ghostbot fix this` on any PR, the bot picks it up and pushes a fix
 - **Telegram + Slack notifications** — Get pinged on your phone when agent jobs start, succeed, or fail
