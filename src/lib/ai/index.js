@@ -18,6 +18,21 @@ import path from 'path';
 const FIRST_TOKEN_TIMEOUT_MS = 120000;  // 2 min for cold model
 const MAX_HISTORY_MESSAGES = 30;
 
+/** Flatten a file tree into a list of paths like "  src/lib/foo.js (2.1K)" */
+function flattenTree(nodes, prefix = '', result = []) {
+  for (const node of nodes) {
+    if (node.type === 'dir') {
+      result.push(`${prefix}${node.name}/`);
+      if (node.children) flattenTree(node.children, prefix + '  ', result);
+    } else {
+      const size = node.size > 1024 ? `${(node.size / 1024).toFixed(1)}K` : `${node.size}B`;
+      result.push(`${prefix}${node.name} (${size})`);
+    }
+    if (result.length > 200) break; // cap to avoid blowing up the prompt
+  }
+  return result;
+}
+
 /** Strip the data URL prefix from a base64 image, returning raw base64 for Ollama. */
 function stripDataUrlPrefix(dataUrl) {
   const idx = dataUrl.indexOf(',');
@@ -126,16 +141,42 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
     try {
       const project = getProjectById(chat.projectId);
       if (project) {
-        const claudeMdPath = path.join(resolveProjectPath(project.path), 'CLAUDE.md');
+        const projectRoot = resolveProjectPath(project.path);
+        const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
+
+        // Read CLAUDE.md
+        let claudeMd = '';
         if (fs.existsSync(claudeMdPath)) {
-          const claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 8000); // cap at 8KB
-          const isNewProject = claudeMd.includes('NEW_PROJECT');
-          systemPrompt += `\n\nProject: ${project.name}\n${claudeMd}`;
-          if (isNewProject) {
-            systemPrompt += `\n\nIMPORTANT: This is a brand new project with no code yet. The CLAUDE.md is a blank template. Your first priority when the user describes what they want to build is to:\n1. Clarify requirements if needed (tech stack, features, scope)\n2. Propose the architecture and conventions\n3. Once confirmed, update the CLAUDE.md with the real project details\n4. Then start building the project step by step\nDo NOT assume anything is already set up. Ask the user what they want to build.`;
-          }
-          console.log('[chatStream] injected project CLAUDE.md', { projectId: project.id, name: project.name, isNew: isNewProject });
+          claudeMd = fs.readFileSync(claudeMdPath, 'utf-8').slice(0, 8000);
         }
+        const isNewProject = claudeMd.includes('NEW_PROJECT');
+
+        // Build a flat file listing so the LLM knows what's in the project
+        let fileList = '';
+        try {
+          const { listFiles } = await import('../projects/files.js');
+          const tree = listFiles(projectRoot);
+          fileList = flattenTree(tree).join('\n');
+        } catch {}
+
+        systemPrompt += `\n\nConnected Project: ${project.name}`;
+        systemPrompt += `\nProject path on server: ${project.path}`;
+
+        if (claudeMd) {
+          systemPrompt += `\n\n--- CLAUDE.md ---\n${claudeMd}\n--- end CLAUDE.md ---`;
+        }
+
+        if (fileList) {
+          systemPrompt += `\n\nProject file tree:\n${fileList}`;
+        }
+
+        systemPrompt += `\n\nYou have full knowledge of this project's files from the file tree above. When the user asks about the project, reference the files you can see. If the user attaches a file from the file tree (as a code block), analyze its contents directly.`;
+
+        if (isNewProject) {
+          systemPrompt += `\n\nIMPORTANT: This is a brand new project with no code yet (or the CLAUDE.md is still a blank template). Your first priority when the user describes what they want to build is to:\n1. Clarify requirements if needed (tech stack, features, scope)\n2. Propose the architecture and conventions\n3. Once confirmed, update the CLAUDE.md with the real project details\n4. Then start building the project step by step\nDo NOT assume anything is already set up. Ask the user what they want to build.`;
+        }
+
+        console.log('[chatStream] injected project context', { projectId: project.id, name: project.name, isNew: isNewProject, files: fileList ? fileList.split('\n').length : 0 });
       }
     } catch (err) {
       console.error('[chatStream] project context injection failed:', err.message);
