@@ -10,8 +10,9 @@ import {
 } from '../../lib/projects/actions.js';
 import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
 import { Plus } from '../../lib/icons/index.jsx';
-import { FolderOpen, Trash2, Pencil, MessageSquarePlus } from 'lucide-react';
+import { FolderOpen, Trash2, Pencil, MessageSquarePlus, Upload, FolderUp } from 'lucide-react';
 import { formatDate } from '../../lib/date-format.js';
+import { useRef } from 'react';
 
 export function ProjectsContent() {
   const router = useRouter();
@@ -20,6 +21,13 @@ export function ProjectsContent() {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [uploading, setUploading] = useState(null);
+  const [uploadMsg, setUploadMsg] = useState(null);
+  const [cloneUrl, setCloneUrl] = useState('');
+  const [cloning, setCloning] = useState(false);
+  const fileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
+  const uploadTargetRef = useRef(null);
 
   function load() {
     listProjectsAction().then(setProjects).catch(() => setProjects([]));
@@ -62,6 +70,65 @@ export function ProjectsContent() {
     }
   }
 
+  async function handleUpload(projectId, files) {
+    if (!files || files.length === 0) return;
+    setUploading(projectId);
+    setUploadMsg(null);
+    try {
+      const formData = new FormData();
+      for (const file of files) {
+        // Preserve relative path for folder uploads
+        formData.append('files', file, file.webkitRelativePath || file.name);
+      }
+      const res = await fetch(`/api/projects/${projectId}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      const msg = `${data.uploaded} file(s) uploaded${data.errors?.length ? `, ${data.errors.length} skipped` : ''}`;
+      setUploadMsg(msg);
+      setTimeout(() => setUploadMsg(null), 5000);
+    } catch (err) {
+      setUploadMsg(`Upload failed: ${err.message}`);
+      setTimeout(() => setUploadMsg(null), 5000);
+    }
+    setUploading(null);
+  }
+
+  function triggerFileUpload(projectId) {
+    uploadTargetRef.current = projectId;
+    fileInputRef.current?.click();
+  }
+
+  function triggerFolderUpload(projectId) {
+    uploadTargetRef.current = projectId;
+    folderInputRef.current?.click();
+  }
+
+  async function handleClone() {
+    if (!cloneUrl.trim()) return;
+    setCloning(true);
+    setUploadMsg(null);
+    try {
+      const res = await fetch('/api/projects/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cloneUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Clone failed');
+      setCloneUrl('');
+      setUploadMsg(`Cloned successfully: ${data.project?.path || 'done'}`);
+      setTimeout(() => setUploadMsg(null), 5000);
+      load();
+    } catch (err) {
+      setUploadMsg(`Clone failed: ${err.message}`);
+      setTimeout(() => setUploadMsg(null), 8000);
+    }
+    setCloning(false);
+  }
+
   async function handleNewChat(projectId) {
     try {
       // Check if there's already a chat connected to this project
@@ -102,6 +169,37 @@ export function ProjectsContent() {
           </div>
         </div>
 
+        {/* Hidden file inputs for upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            handleUpload(uploadTargetRef.current, Array.from(e.target.files || []));
+            e.target.value = '';
+          }}
+        />
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          // @ts-ignore — webkitdirectory is non-standard but widely supported
+          webkitdirectory=""
+          directory=""
+          className="hidden"
+          onChange={(e) => {
+            handleUpload(uploadTargetRef.current, Array.from(e.target.files || []));
+            e.target.value = '';
+          }}
+        />
+
+        {uploadMsg && (
+          <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-foreground">
+            {uploadMsg}
+          </div>
+        )}
+
         {/* Create new project */}
         <div className="flex gap-2 mb-8">
           <input
@@ -119,6 +217,25 @@ export function ProjectsContent() {
           >
             <Plus className="h-4 w-4" />
             Create
+          </button>
+        </div>
+
+        {/* Clone from Git */}
+        <div className="flex gap-2 mb-8">
+          <input
+            type="text"
+            value={cloneUrl}
+            onChange={(e) => setCloneUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleClone()}
+            placeholder="Clone from Git URL (e.g. https://github.com/user/repo)"
+            className="flex-1 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/40"
+          />
+          <button
+            onClick={handleClone}
+            disabled={cloning || !cloneUrl.trim()}
+            className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/30 hover:text-primary disabled:opacity-50 transition-colors cursor-pointer"
+          >
+            {cloning ? 'Cloning...' : 'Clone'}
           </button>
         </div>
 
@@ -164,8 +281,24 @@ export function ProjectsContent() {
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
+                    onClick={() => triggerFileUpload(project.id)}
+                    disabled={uploading === project.id}
+                    title="Upload files"
+                    className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => triggerFolderUpload(project.id)}
+                    disabled={uploading === project.id}
+                    title="Upload folder"
+                    className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  >
+                    <FolderUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
                     onClick={() => handleNewChat(project.id)}
-                    title="Open new chat with this project"
+                    title="Open chat with this project"
                     className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                   >
                     <MessageSquarePlus className="h-4 w-4" />
