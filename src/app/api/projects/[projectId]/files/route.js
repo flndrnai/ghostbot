@@ -1,8 +1,12 @@
 import { auth } from '../../../../../lib/auth/config.js';
 import { getProjectById, resolveProjectPath } from '../../../../../lib/db/projects.js';
 import { listFiles, createFileOrFolder } from '../../../../../lib/projects/files.js';
+import { enforceRateLimit } from '../../../../../lib/rate-limit.js';
 
 export async function GET(request, { params }) {
+  const limited = enforceRateLimit(request, 'files:list', { limit: 60, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 

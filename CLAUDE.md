@@ -104,6 +104,9 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 - ✅ Auto-summarize every chat into 2-3 sentences + topic tags
 - ✅ Auto-inject top-3 relevant past summaries into new chat system prompts
 - ✅ `/admin/memory` page: stats, semantic search, source filter, manual entries, JSON export
+- ✅ Persistent memory: per-user MEMORY.md (Tier 1) + daily session logs (Tier 2)
+- ✅ Guardrails: safety rules auto-injected into every system prompt
+- ✅ Session logging: every chat exchange appended to daily log automatically
 
 ### Agent jobs
 - ✅ Aider image (default — text diff format, works with small models)
@@ -160,8 +163,8 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 
 | Item | Reason |
 |---|---|
-| Light mode polish | Dark mode is the default; nobody uses light yet |
-| Rate limiting on `/api` | Single-user / small group; not getting hammered |
+| Light mode fine-tuning | Basic light mode + toggle shipped; may need per-component polish |
+| Rate limiting on remaining `/api` routes | Core routes covered; remaining are low-risk admin-only |
 | VS Code extension v0.2 (deep editor integration: send selection, code lens) | Webview wrapper covers 95% of value |
 | `/api/agent-jobs/diff` for non-succeeded jobs | Diff comes from GitHub compare which only exists post-push |
 

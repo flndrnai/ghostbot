@@ -1,6 +1,7 @@
 import { auth } from '../../../../../../lib/auth/config.js';
 import { getProjectById, resolveProjectPath } from '../../../../../../lib/db/projects.js';
 import { readFile, writeFile, deleteFileOrFolder } from '../../../../../../lib/projects/files.js';
+import { enforceRateLimit } from '../../../../../../lib/rate-limit.js';
 
 async function getAuthedProject(params, session) {
   const { projectId, filePath } = await params;
@@ -12,6 +13,9 @@ async function getAuthedProject(params, session) {
 }
 
 export async function GET(request, { params }) {
+  const limited = enforceRateLimit(request, 'files:read', { limit: 120, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -28,6 +32,9 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const limited = enforceRateLimit(request, 'files:write', { limit: 30, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 

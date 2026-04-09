@@ -1,7 +1,11 @@
 import { auth } from '../../../lib/auth/config.js';
 import { createProject, getProjectsByUser } from '../../../lib/db/projects.js';
+import { enforceRateLimit } from '../../../lib/rate-limit.js';
 
-export async function GET() {
+export async function GET(request) {
+  const limited = enforceRateLimit(request, 'projects:list', { limit: 60, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -10,6 +14,9 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const limited = enforceRateLimit(request, 'projects:create', { limit: 10, windowMs: 60 * 1000 });
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 

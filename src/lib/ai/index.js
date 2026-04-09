@@ -9,6 +9,8 @@ import { getProjectById, resolveProjectPath } from '../db/projects.js';
 import { recordTokenUsage } from '../db/token-usage.js';
 import { searchChatSummaries } from '../memory/store.js';
 import { summarizeChat } from '../memory/summarize.js';
+import { getMemoryContext, appendToLog } from '../memory/persistent.js';
+import { getGuardrails } from './guardrails.js';
 import { getChatAbortSignal } from './live-chats.js';
 import fs from 'fs';
 import path from 'path';
@@ -69,12 +71,32 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   const baseSystemPrompt = getConfig('SYSTEM_PROMPT') || 'You are GhostBot, a helpful AI assistant.';
   const temperature = parseFloat(getConfig('TEMPERATURE') || '0.7');
 
+  // ========= GUARDRAILS =========
+  // Always-on safety rules injected into every chat.
+  const guardrails = getGuardrails();
+
+  // ========= PERSISTENT MEMORY (Tier 1 + Tier 2) =========
+  // Per-user MEMORY.md (curated facts) + today's session log.
+  let persistentMemory = '';
+  try {
+    persistentMemory = getMemoryContext(userId);
+    if (persistentMemory) {
+      console.log('[chatStream] loaded persistent memory for user', userId);
+    }
+  } catch (err) {
+    console.error('[chatStream] persistent memory load failed:', err.message);
+  }
+
   // ========= MEMORY RETRIEVAL (RAG) =========
   // On the first message of a new chat, search past chat summaries
   // for semantically relevant context and inject it into the system
   // prompt. Fire-and-forget: failures never block the chat.
   // Respects the per-chat memoryEnabled opt-out.
-  let systemPrompt = baseSystemPrompt;
+  // Build system prompt: base + guardrails + persistent memory
+  let systemPrompt = baseSystemPrompt + '\n\n' + guardrails;
+  if (persistentMemory) {
+    systemPrompt += '\n\nPersistent memory:\n' + persistentMemory;
+  }
   const memoryOn = chat ? !!chat.memoryEnabled : true;
   const dbMessagesCount = (getMessagesByChatId(chatId) || []).length;
   const isFirstMessage = dbMessagesCount <= 1; // only the user msg we just saved
@@ -254,6 +276,14 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   }
 
   console.log('[chatStream] stream done', { fullContentLen: fullContent.length, isError: fullContent.startsWith('Error:') });
+
+  // ========= SESSION LOG (Tier 2) =========
+  // Append a summary of this exchange to the daily log
+  try {
+    const msgPreview = userMessage.slice(0, 80).replace(/\n/g, ' ');
+    appendToLog(userId, `Chat: "${msgPreview}${userMessage.length > 80 ? '...' : ''}" → ${fullContent.length} chars response`);
+  } catch {}
+
 
   if (fullContent && !fullContent.startsWith('Error:')) {
     const savedMsg = saveMessage(chatId, 'assistant', fullContent);
