@@ -62,10 +62,43 @@ export function ProjectsContent() {
     }
   }
 
-  function handleNewChat(projectId) {
-    // Navigate to home to create a new chat, with project connect
-    // The chat page will handle connecting the project
-    router.push(`/?projectId=${projectId}`);
+  async function handleNewChat(projectId) {
+    try {
+      // Check if there's already a chat connected to this project
+      const res = await fetch('/api/chats');
+      const chats = await res.json();
+      const existingChat = (Array.isArray(chats) ? chats : []).find((c) => c.projectId === projectId);
+
+      if (existingChat) {
+        // Navigate to the existing project chat
+        router.push(`/chat/${existingChat.id}`);
+        return;
+      }
+
+      // Create a new chat with the project name as title, then connect the project
+      const project = projects.find((p) => p.id === projectId);
+      const chatRes = await fetch('/stream/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: crypto.randomUUID(),
+          messages: [{ role: 'user', content: `I'm working on the project "${project?.name || 'Project'}". Read my CLAUDE.md and give me an overview of the current state.` }],
+        }),
+      });
+      const chatId = chatRes.headers.get('X-Chat-Id');
+
+      if (chatId) {
+        // Connect the project to this new chat
+        await fetch(`/api/projects/${projectId}/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId }),
+        });
+        router.push(`/chat/${chatId}`);
+      }
+    } catch (err) {
+      console.error('[projects] open chat failed:', err);
+    }
   }
 
   return (
