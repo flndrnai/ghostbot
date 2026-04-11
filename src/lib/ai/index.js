@@ -12,6 +12,8 @@ import { summarizeChat } from '../memory/summarize.js';
 import { getMemoryContext, appendToLog } from '../memory/persistent.js';
 import { getGuardrails } from './guardrails.js';
 import { getChatAbortSignal } from './live-chats.js';
+import { getFullContext } from '../context/index.js';
+import { getSkillBySlug } from '../skills/db.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -107,10 +109,36 @@ export async function* chatStream(chatId, userId, userMessage, clientHistory = n
   // for semantically relevant context and inject it into the system
   // prompt. Fire-and-forget: failures never block the chat.
   // Respects the per-chat memoryEnabled opt-out.
-  // Build system prompt: base + guardrails + persistent memory
+  // Build system prompt: base + guardrails + business context + persistent memory
   let systemPrompt = baseSystemPrompt + '\n\n' + guardrails;
+
+  // ========= BUSINESS CONTEXT =========
+  try {
+    const businessContext = getFullContext();
+    if (businessContext) {
+      systemPrompt += '\n\n' + businessContext;
+    }
+  } catch {}
+
   if (persistentMemory) {
     systemPrompt += '\n\nPersistent memory:\n' + persistentMemory;
+  }
+
+  // ========= SKILL DETECTION =========
+  // If the user message starts with /skill-name, resolve and replace
+  let resolvedSkillName = null;
+  if (userMessage.startsWith('/') && !userMessage.startsWith('//')) {
+    const spaceIdx = userMessage.indexOf(' ');
+    const slug = spaceIdx > 0 ? userMessage.slice(1, spaceIdx) : userMessage.slice(1);
+    const remainder = spaceIdx > 0 ? userMessage.slice(spaceIdx + 1).trim() : '';
+    try {
+      const skill = getSkillBySlug(slug, userId);
+      if (skill) {
+        resolvedSkillName = skill.name;
+        userMessage = skill.promptTemplate.replace(/\{\{input\}\}/g, remainder || '(no input provided)');
+        console.log('[chatStream] resolved skill:', slug, '→', skill.name);
+      }
+    } catch {}
   }
   const memoryOn = chat ? !!chat.memoryEnabled : true;
   const dbMessagesCount = (getMessagesByChatId(chatId) || []).length;

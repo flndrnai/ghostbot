@@ -3,6 +3,7 @@ import path from 'path';
 import cron from 'node-cron';
 import { PROJECT_ROOT } from './paths.js';
 import { executeAction, resolveTemplates } from './actions.js';
+import { runScanner } from './scanner/run.js';
 
 const scheduledJobs = [];
 
@@ -30,6 +31,11 @@ export function loadCrons() {
       const job = cron.schedule(entry.schedule, async () => {
         console.log(`[cron] firing: ${entry.name}`);
         try {
+          // Special action type: scanner
+          if (entry.type === 'scanner') {
+            await runScanner(entry.userId || null);
+            return;
+          }
           const resolved = {
             ...entry,
             job: resolveTemplates(entry.job, { datetime: new Date().toISOString() }),

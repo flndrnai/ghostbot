@@ -135,7 +135,7 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 - ✅ Run-now chains roles sequentially via `launchAgentJob`, feeds previous output as context
 
 ### Admin
-- ✅ Pages: LLM Providers, Ollama, Chat, Agents, GitHub, Telegram, Slack, Triggers, Crons, Containers, Monitoring, Memory, Backup, Users
+- ✅ Pages: LLM Providers, Ollama, Chat, Agents, Skills, GitHub, Telegram, Slack, Triggers, Crons, Scanner, Context, Containers, Monitoring, Memory, Backup, Users
 - ✅ Containers page works once docker.sock is bind-mounted
 - ✅ Monitoring page shows agent-job stats + recent jobs with PR links
 - ✅ Backup page exports the whole DB as JSON
@@ -146,7 +146,7 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 - ✅ Clipboard image paste — screenshots and images auto-resized, sent to vision-capable LLMs
 - ✅ Chat export to Markdown (download button on each sidebar chat row)
 - ✅ Docs page in user dropdown explaining every admin section
-- ✅ VS Code extension scaffold under `vscode-extension/`
+- ✅ VS Code extension v0.2: sidebar + full tab + send selection + status bar + CodeLens
 
 ### Projects
 - ✅ Project Connect: create/manage project folders on the server
@@ -157,6 +157,38 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 - ✅ `/projects` list page with create, rename, delete
 - ✅ Safe file system API with path traversal protection
 
+### Autonomous Builder
+- ✅ LLM-powered plan generation from a build goal
+- ✅ Sequential step execution via agent jobs with polling
+- ✅ Step validation (expected file checks)
+- ✅ Retry logic on failure (configurable max retries)
+- ✅ Pause/resume/cancel controls
+- ✅ Real-time progress via SSE (builder:* events)
+- ✅ Auto-updates CLAUDE.md "What's Shipped" on completion
+- ✅ Telegram/Slack notifications on completion
+- ✅ `/builder/[planId]` progress page with step cards
+
+### AI Scanner
+- ✅ Self-reflecting daily scanner cron (06:30 daily)
+- ✅ Analyzes recent session logs, chat summaries, agent job results
+- ✅ Produces AI world insights + GhostBot self-improvement suggestions
+- ✅ Results stored as knowledge entries (searchable via RAG)
+- ✅ `/admin/scanner` page with run-now button and expandable results
+
+### AIOS / Business Context
+- ✅ `data/context/my-business.md` — persistent business context
+- ✅ `data/context/my-voice.md` — communication style guide
+- ✅ Both injected into system prompt (after guardrails, before memory)
+- ✅ `/admin/context` page with textarea editors
+- ✅ Skills system: reusable prompt templates stored in DB
+- ✅ `/skill-name` invocation from chat with `{{input}}` substitution
+- ✅ `/admin/skills` page: create, edit, delete skills
+
+### Mobile
+- ✅ SSE reconnect on visibility change (tab foreground/background)
+- ✅ SSE reconnect on network online/offline events
+- ✅ Immediate reconnect (no 30s backoff delay)
+
 ---
 
 ## What's parked
@@ -165,8 +197,8 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 |---|---|
 | Light mode fine-tuning | Basic light mode + toggle shipped; may need per-component polish |
 | Rate limiting on remaining `/api` routes | Core routes covered; remaining are low-risk admin-only |
-| VS Code extension v0.2 (deep editor integration: send selection, code lens) | Webview wrapper covers 95% of value |
 | `/api/agent-jobs/diff` for non-succeeded jobs | Diff comes from GitHub compare which only exists post-push |
+| VS Code Marketplace publishing | Extension v0.2 built; needs final packaging and publish |
 
 ---
 

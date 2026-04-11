@@ -2,7 +2,7 @@
   "name": "ghostbot-vscode",
   "displayName": "GhostBot",
   "description": "Open your self-hosted GhostBot chat and coding agents inside VS Code",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "flndrn",
   "engines": {
     "vscode": "^1.85.0"
@@ -40,8 +40,27 @@
         "command": "ghostbot.openInBrowser",
         "title": "GhostBot: Open in External Browser",
         "category": "GhostBot"
+      },
+      {
+        "command": "ghostbot.sendSelection",
+        "title": "GhostBot: Send Selection to Chat",
+        "category": "GhostBot"
+      },
+      {
+        "command": "ghostbot.askAboutFunction",
+        "title": "GhostBot: Ask About This",
+        "category": "GhostBot"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "ghostbot.sendSelection",
+          "when": "editorHasSelection",
+          "group": "ghostbot"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -82,6 +101,12 @@
         "command": "ghostbot.newChat",
         "key": "ctrl+shift+g",
         "mac": "cmd+shift+g"
+      },
+      {
+        "command": "ghostbot.sendSelection",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "editorHasSelection"
       }
     ]
   },

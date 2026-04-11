@@ -7,7 +7,7 @@
 #   GH_BRANCH         New branch to push (e.g. agent-job/12345)
 #   BASE_BRANCH       Branch to fork from (default: main)
 #   PROMPT            User's request, passed to Aider as --message
-#   OLLAMA_BASE_URL   Ollama base URL WITHOUT /v1 (e.g. http://187.124.209.17:11434)
+#   OLLAMA_BASE_URL   Ollama base URL WITHOUT /v1 (e.g. http://187.124.64.116:11434)
 #   MODEL             Ollama model name (e.g. qwen2.5-coder:14b)
 #
 # Optional:

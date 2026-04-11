@@ -56,9 +56,40 @@ export function useSyncEvents(onEvent) {
 
     connect();
 
+    // Mobile SSE reconnect: visibility + network awareness
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible' && !closed) {
+        backoff = 1000;
+        try { es?.close(); } catch {}
+        es = null;
+        connect();
+      }
+    }
+
+    function handleOnline() {
+      if (!closed) {
+        backoff = 1000;
+        try { es?.close(); } catch {}
+        es = null;
+        connect();
+      }
+    }
+
+    function handleOffline() {
+      try { es?.close(); } catch {}
+      es = null;
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
       closed = true;
       try { es?.close(); } catch {}
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [onEvent]);
 }

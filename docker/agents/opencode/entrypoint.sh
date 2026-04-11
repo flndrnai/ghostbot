@@ -8,9 +8,9 @@
 #   GH_BRANCH         The new branch to push (e.g. agent-job/12345)
 #   BASE_BRANCH       The branch to fork from (default: main)
 #   PROMPT            The user's request, passed to OpenCode
-#   OPENAI_BASE_URL   OpenAI-compatible endpoint (e.g. http://187.124.209.17:11434/v1)
+#   OPENAI_BASE_URL   OpenAI-compatible endpoint (e.g. http://187.124.64.116:11434/v1)
 #   OPENAI_API_KEY    Any value for Ollama (e.g. "ollama")
-#   MODEL             Model name (e.g. qwen2.5-coder:7b)
+#   MODEL             Model name (e.g. qwen2.5-coder:14b)
 #
 # Optional:
 #   COMMIT_MESSAGE    Override commit message (default: derived from prompt)

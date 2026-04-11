@@ -26,9 +26,9 @@ docker run --rm \
   -e GH_BRANCH="agent-job/smoke-$(date +%s)" \
   -e BASE_BRANCH="main" \
   -e PROMPT='Add a single comment line to the top of README.md saying "OpenCode test ok"' \
-  -e OPENAI_BASE_URL="http://187.124.209.17:11434/v1" \
+  -e OPENAI_BASE_URL="http://187.124.64.116:11434/v1" \
   -e OPENAI_API_KEY="ollama" \
-  -e MODEL="qwen2.5-coder:7b" \
+  -e MODEL="qwen2.5-coder:14b" \
   ghostbot:coding-agent-opencode
 ```
 

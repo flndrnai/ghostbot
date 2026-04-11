@@ -10,7 +10,7 @@ import {
 } from '../../lib/projects/actions.js';
 import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.jsx';
 import { Plus } from '../../lib/icons/index.jsx';
-import { FolderOpen, Trash2, Pencil, MessageSquarePlus, Upload, FolderUp } from 'lucide-react';
+import { FolderOpen, Trash2, Pencil, MessageSquarePlus, Upload, FolderUp, Hammer } from 'lucide-react';
 import { formatDate } from '../../lib/date-format.js';
 import { useRef } from 'react';
 
@@ -25,6 +25,9 @@ export function ProjectsContent() {
   const [uploadMsg, setUploadMsg] = useState(null);
   const [cloneUrl, setCloneUrl] = useState('');
   const [cloning, setCloning] = useState(false);
+  const [buildingProject, setBuildingProject] = useState(null);
+  const [buildGoal, setBuildGoal] = useState('');
+  const [buildLoading, setBuildLoading] = useState(false);
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
   const uploadTargetRef = useRef(null);
@@ -156,6 +159,25 @@ export function ProjectsContent() {
     } catch (err) {
       console.error('[projects] open chat failed:', err);
     }
+  }
+
+  async function handleBuild(projectId) {
+    if (!buildGoal.trim()) return;
+    setBuildLoading(true);
+    try {
+      const { createBuilderPlanAction } = await import('../../lib/builder/actions.js');
+      const result = await createBuilderPlanAction(projectId, buildGoal.trim());
+      if (result?.planId) {
+        router.push(`/builder/${result.planId}`);
+      } else if (result?.error) {
+        alert(result.error);
+      }
+    } catch (err) {
+      console.error('[projects] build plan failed:', err);
+    }
+    setBuildLoading(false);
+    setBuildingProject(null);
+    setBuildGoal('');
   }
 
   return (
@@ -304,6 +326,13 @@ export function ProjectsContent() {
                     <MessageSquarePlus className="h-4 w-4" />
                   </button>
                   <button
+                    onClick={() => { setBuildingProject(buildingProject === project.id ? null : project.id); setBuildGoal(''); }}
+                    title="Autonomous Builder"
+                    className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  >
+                    <Hammer className="h-3.5 w-3.5" />
+                  </button>
+                  <button
                     onClick={() => { setEditingId(project.id); setEditName(project.name); }}
                     title="Rename"
                     className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -319,6 +348,32 @@ export function ProjectsContent() {
                   </button>
                 </div>
               </div>
+              {buildingProject === project.id && (
+                <div className="rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4 -mt-1">
+                  <p className="text-sm font-medium text-foreground mb-2">What do you want to build?</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={buildGoal}
+                      onChange={(e) => setBuildGoal(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleBuild(project.id)}
+                      placeholder="Describe the feature or full project to build..."
+                      autoFocus
+                      className="flex-1 rounded-xl border border-border/60 bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    <button
+                      onClick={() => handleBuild(project.id)}
+                      disabled={buildLoading || !buildGoal.trim()}
+                      className="px-4 py-2.5 bg-primary text-background rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      {buildLoading ? 'Planning...' : 'Build'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    The LLM will generate a step-by-step plan, then execute each step as an agent job.
+                  </p>
+                </div>
+              )}
             ))}
           </div>
         )}

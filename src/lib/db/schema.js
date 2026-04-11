@@ -172,6 +172,47 @@ export const projects = sqliteTable('projects', {
   updatedAt: integer('updated_at').notNull(),
 });
 
+// Skills — reusable prompt templates invocable via /skill-name in chat
+export const skills = sqliteTable('skills', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull(),
+  description: text('description').default(''),
+  promptTemplate: text('prompt_template').notNull(),
+  modelPreference: text('model_preference'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Builder plans — autonomous multi-step project builds
+export const builderPlans = sqliteTable('builder_plans', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  userId: text('user_id').notNull(),
+  goal: text('goal').notNull(),
+  status: text('status').notNull().default('planning'), // planning|running|paused|completed|failed
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+// Builder steps — individual steps within a build plan
+export const builderSteps = sqliteTable('builder_steps', {
+  id: text('id').primaryKey(),
+  planId: text('plan_id').notNull(),
+  stepNumber: integer('step_number').notNull(),
+  title: text('title').notNull(),
+  prompt: text('prompt').notNull(),
+  status: text('status').notNull().default('pending'), // pending|running|succeeded|failed|skipped
+  jobId: text('job_id'),
+  output: text('output'),
+  validationResult: text('validation_result'), // JSON
+  retryCount: integer('retry_count').notNull().default(0),
+  maxRetries: integer('max_retries').notNull().default(2),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
 export const agentJobs = sqliteTable('agent_jobs', {
   id: text('id').primaryKey(),
   chatId: text('chat_id'),              // optional — jobs can be standalone

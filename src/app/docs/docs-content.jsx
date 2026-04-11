@@ -124,7 +124,7 @@ export function DocsContent() {
               </Block>
               <Block label="How to use">
                 Pick <code>Ollama (Local)</code>, type the exact model name from <code>ollama list</code>
-                {' '}(e.g. <code>qwen2.5-coder:7b</code>), click <strong>Save & Apply</strong>. The card flips
+                {' '}(e.g. <code>qwen2.5-coder:14b</code>), click <strong>Save & Apply</strong>. The card flips
                 to a green Connected state. Use Disconnect to clear and start over.
               </Block>
               <Block label="Any Ollama model works">
@@ -143,7 +143,7 @@ export function DocsContent() {
               </Block>
               <Block label="What it does">
                 <ul className="list-disc pl-5 space-y-1.5">
-                  <li>Stores the Ollama base URL (e.g. <code>http://187.124.209.17:11434</code>)</li>
+                  <li>Stores the Ollama base URL (e.g. <code>http://187.124.64.116:11434</code>)</li>
                   <li>Auto-tests the connection on page load</li>
                   <li>Auto-discovers all installed models via Ollama&apos;s <code>/api/tags</code> endpoint</li>
                   <li>Lets you click <strong>Set Active</strong> on any installed model</li>
@@ -158,7 +158,7 @@ export function DocsContent() {
               <Block label="How to use">
                 <ol className="list-decimal pl-5 space-y-1.5">
                   <li>Install Ollama on your VPS or local machine (<code>curl -fsSL https://ollama.com/install.sh | sh</code>)</li>
-                  <li>Pull any model you want: <code>ollama pull &lt;model&gt;</code> (e.g. <code>ollama pull llama3</code>, <code>ollama pull mistral</code>, <code>ollama pull qwen2.5-coder:7b</code>)</li>
+                  <li>Pull any model you want: <code>ollama pull &lt;model&gt;</code> (e.g. <code>ollama pull llama3</code>, <code>ollama pull mistral</code>, <code>ollama pull qwen2.5-coder:14b</code>)</li>
                   <li>Pull the embedding model for memory: <code>ollama pull nomic-embed-text</code></li>
                   <li>Expose port 11434 to your GhostBot server (firewall it to that IP only)</li>
                   <li>Paste the URL here, click Test & Save — all installed models appear automatically</li>

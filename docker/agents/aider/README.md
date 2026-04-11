@@ -28,7 +28,7 @@ docker run --rm \
   -e GH_BRANCH="agent-job/aider-smoke-$(date +%s)" \
   -e BASE_BRANCH="main" \
   -e PROMPT='Add a single comment line to the top of README.md saying "Aider test ok"' \
-  -e OLLAMA_BASE_URL="http://187.124.209.17:11434" \
+  -e OLLAMA_BASE_URL="http://187.124.64.116:11434" \
   -e MODEL="qwen2.5-coder:14b" \
   ghostbot:coding-agent-aider
 ```
@@ -49,7 +49,7 @@ You should see:
 | `GH_BRANCH` | New branch name to push |
 | `BASE_BRANCH` | Branch to fork from (default: `main`) |
 | `PROMPT` | The user's request |
-| `OLLAMA_BASE_URL` | Ollama base URL **without** `/v1` (e.g. `http://187.124.209.17:11434`) |
+| `OLLAMA_BASE_URL` | Ollama base URL **without** `/v1` (e.g. `http://187.124.64.116:11434`) |
 | `MODEL` | Exact Ollama model name |
 
 ## Optional

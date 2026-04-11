@@ -143,6 +143,58 @@ function runAutoMigrations(sqlite) {
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_agent_jobs_chat ON agent_jobs(chat_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_user ON knowledge_entries(user_id);`);
     sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_chat_summaries_user ON chat_summaries(user_id);`);
+
+    // Skills table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS skills (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        prompt_template TEXT NOT NULL,
+        model_preference TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_skills_slug ON skills(slug);`);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_skills_user ON skills(user_id);`);
+
+    // Builder plans table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS builder_plans (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        goal TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'planning',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_builder_plans_user ON builder_plans(user_id);`);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_builder_plans_project ON builder_plans(project_id);`);
+
+    // Builder steps table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS builder_steps (
+        id TEXT PRIMARY KEY,
+        plan_id TEXT NOT NULL,
+        step_number INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        job_id TEXT,
+        output TEXT,
+        validation_result TEXT,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 2,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_builder_steps_plan ON builder_steps(plan_id);`);
   } catch (err) {
     console.error('[db] auto-migration failed:', err.message);
   }

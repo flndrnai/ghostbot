@@ -13,6 +13,7 @@ const coreTabs = [
   { href: '/admin/chat', label: 'Chat' },
   { href: '/admin/memory', label: 'Memory' },
   { href: '/admin/agents', label: 'Agents' },
+  { href: '/admin/skills', label: 'Skills' },
 ];
 
 // Everything else lives behind a dropdown button.
@@ -30,6 +31,13 @@ const dropdownGroups = [
     tabs: [
       { href: '/admin/triggers', label: 'Triggers' },
       { href: '/admin/crons', label: 'Crons' },
+      { href: '/admin/scanner', label: 'Scanner' },
+    ],
+  },
+  {
+    label: 'AIOS',
+    tabs: [
+      { href: '/admin/context', label: 'Context' },
     ],
   },
   {

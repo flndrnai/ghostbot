@@ -106,6 +106,22 @@ export function ChatInput(props) {
     el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [input]);
 
+  // VS Code extension postMessage bridge
+  useEffect(() => {
+    function handleVSCodeMessage(event) {
+      const data = event.data;
+      if (data?.type === 'ghostbot:send-text' && data.text) {
+        const lang = data.language || '';
+        const fileName = data.fileName || '';
+        const codeBlock = `\`\`\`${lang}${fileName ? ` (${fileName})` : ''}\n${data.text}\n\`\`\``;
+        onInputChange((input || '') + (input ? '\n\n' : '') + codeBlock);
+        textareaRef.current?.focus();
+      }
+    }
+    window.addEventListener('message', handleVSCodeMessage);
+    return () => window.removeEventListener('message', handleVSCodeMessage);
+  }, [input, onInputChange]);
+
   async function readFileAsText(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

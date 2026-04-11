@@ -175,7 +175,7 @@ export default function LLMsPage() {
                   <Input
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
-                    placeholder="e.g. qwen2.5-coder:7b, qwen2.5:32b, llama3.2"
+                    placeholder="e.g. qwen2.5-coder:14b, qwen2.5:32b, llama3.2"
                   />
                   <p className="text-xs text-muted-foreground">Enter the exact model name from <code className="bg-muted px-1 rounded">ollama list</code></p>
                 </div>

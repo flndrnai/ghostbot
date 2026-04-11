@@ -11,7 +11,7 @@
 # Either:
 #   OPENAI_API_KEY   for real OpenAI
 # Or:
-#   OPENAI_BASE_URL  e.g. http://187.124.209.17:11434/v1 (Ollama compat)
+#   OPENAI_BASE_URL  e.g. http://187.124.64.116:11434/v1 (Ollama compat)
 #   OPENAI_API_KEY   any value for Ollama
 #
 # Optional:

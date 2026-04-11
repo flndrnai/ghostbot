@@ -14,7 +14,7 @@
 #     -e GH_BRANCH=agent-job/test-1 \
 #     -e BASE_BRANCH=main \
 #     -e PROMPT='Add a comment to README.md' \
-#     -e OLLAMA_BASE_URL=http://187.124.209.17:11434 \
+#     -e OLLAMA_BASE_URL=http://187.124.64.116:11434 \
 #     -e MODEL=qwen2.5-coder:14b \
 #     ghostbot:coding-agent-aider
 
