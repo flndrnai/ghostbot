@@ -270,8 +270,8 @@ export function ProjectsContent() {
         ) : (
           <div className="space-y-3">
             {projects.map((project) => (
+              <div key={project.id}>
               <div
-                key={project.id}
                 className="rounded-2xl border border-border/60 bg-muted/20 px-5 py-4 flex items-center justify-between gap-4 hover:border-primary/20 transition-colors"
               >
                 <div className="flex-1 min-w-0">
@@ -374,6 +374,7 @@ export function ProjectsContent() {
                   </p>
                 </div>
               )}
+              </div>
             ))}
           </div>
         )}
