@@ -165,8 +165,12 @@ export function ProjectsContent() {
     if (!buildGoal.trim()) return;
     setBuildLoading(true);
     try {
-      const { createBuilderPlanAction } = await import('../../lib/builder/actions.js');
-      const result = await createBuilderPlanAction(projectId, buildGoal.trim());
+      const res = await fetch('/api/builder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, goal: buildGoal.trim() }),
+      });
+      const result = await res.json();
       if (result?.planId) {
         router.push(`/builder/${result.planId}`);
       } else if (result?.error) {
@@ -174,6 +178,7 @@ export function ProjectsContent() {
       }
     } catch (err) {
       console.error('[projects] build plan failed:', err);
+      alert('Failed to create build plan: ' + (err.message || 'Unknown error'));
     }
     setBuildLoading(false);
     setBuildingProject(null);
