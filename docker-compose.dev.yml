@@ -1,0 +1,20 @@
+# Development override — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  ghostbot:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app
+      - /app/node_modules
+      - ghostbot-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3000:3000"
+
+volumes:
+  ghostbot-data:

@@ -25,9 +25,38 @@ Repo: **[github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot)**
 
 ---
 
+## Screenshots
+
+> Screenshots coming soon — see the live instance at [ghostbot.dev](https://ghostbot.dev)
+
+<!-- TODO: add screenshots to assets/screenshots/ and reference here
+![Chat view](assets/screenshots/chat-view.png)
+![Admin panel](assets/screenshots/admin-panel.png)
+![Agent job](assets/screenshots/agent-job.png)
+![Cluster pipeline](assets/screenshots/cluster-pipeline.png)
+![Project Connect](assets/screenshots/project-connect.png)
+-->
+
+---
+
 ## Quick start
 
-### Prerequisites
+### Docker Compose (recommended)
+
+```bash
+git clone https://github.com/flndrnai/ghostbot.git
+cd ghostbot
+
+# Generate your secret
+cp .env.example .env
+echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+
+docker compose up -d
+```
+
+Open `http://localhost:3000`. First visit creates the admin account. Then go to `/admin` to configure your LLM provider.
+
+### Prerequisites (local dev)
 
 - Node.js 22+
 - An Ollama instance (any VPS) — or an Anthropic / OpenAI / Google API key
@@ -107,6 +136,10 @@ After the first deploy, hit `/login`, set up the admin account, then go to `/adm
 
 ```
 ghostbot/
+├── docker-compose.yml            # Production: docker compose up -d
+├── docker-compose.dev.yml        # Dev override with hot reload
+├── .env.example                  # Environment variable template
+├── assets/screenshots/           # README screenshots
 ├── src/                          # Next.js app
 │   ├── app/                      # App Router pages + API routes
 │   │   ├── page.js               # / chat

@@ -1,0 +1,42 @@
+services:
+  ghostbot:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: ghostbot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ghostbot-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_PATH=${DATABASE_PATH:-data/db/ghostbot.sqlite}
+    env_file:
+      - .env
+
+  # Optional: local Ollama instance
+  # Uncomment to run Ollama alongside GhostBot
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ghostbot-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-models:/root/.ollama
+  #   # GPU support (NVIDIA):
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: all
+  #   #           capabilities: [gpu]
+
+volumes:
+  ghostbot-data:
+  # ollama-models:

@@ -10,6 +10,7 @@ export default auth((req) => {
   // Allow public routes
   if (
     pathname.startsWith('/api/') ||
+    pathname === '/' ||
     pathname === '/login' ||
     pathname.startsWith('/invite/')
   ) {
