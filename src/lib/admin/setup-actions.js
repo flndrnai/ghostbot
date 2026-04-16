@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '../auth/config.js';
-import { getConfig, setConfig, invalidateConfigCache } from '../config.js';
-import { setConfigSecret, getConfigSecret, deleteConfigSecret } from '../db/config.js';
+import { setConfig } from '../config.js';
+import { getConfigSecret } from '../db/config.js';
 import {
   testLLMConnection,
   testOllamaConnection,
@@ -39,9 +39,13 @@ async function requireOwner() {
 
 export async function getSetupState() {
   await requireOwner();
-  const lifecycle = getWizardLifecycle();
-  const status = await computeStepStatus();
-  return { lifecycle, status };
+  try {
+    const lifecycle = getWizardLifecycle();
+    const status = await computeStepStatus();
+    return { lifecycle, status };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 export async function markWizardFirstShown() {
@@ -66,74 +70,92 @@ export async function dismissWizardBanner() {
 
 export async function saveAndTestLlm({ provider, baseUrl, apiKey, model }) {
   await requireOwner();
-  if (provider === 'ollama') {
-    const testResult = await testOllamaConnection(baseUrl);
+  try {
+    if (provider === 'ollama') {
+      const testResult = await testOllamaConnection(baseUrl);
+      if (!testResult.success) return { ok: false, error: testResult.error };
+      await saveOllamaUrl(baseUrl);
+      await saveProviderConfig('ollama', model || (testResult.models?.[0]?.name ?? ''));
+      return { ok: true, models: testResult.models };
+    }
+
+    const keyName = {
+      anthropic: 'ANTHROPIC_API_KEY',
+      openai: 'OPENAI_API_KEY',
+      google: 'GOOGLE_API_KEY',
+    }[provider];
+    if (!keyName) return { ok: false, error: `Unknown provider: ${provider}` };
+
+    if (apiKey?.trim()) await saveApiKey(keyName, apiKey.trim());
+    await saveProviderConfig(provider, model || '');
+
+    const testResult = await testLLMConnection();
     if (!testResult.success) return { ok: false, error: testResult.error };
-    await saveOllamaUrl(baseUrl);
-    await saveProviderConfig('ollama', model || (testResult.models?.[0]?.name ?? ''));
-    return { ok: true, models: testResult.models };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
   }
-
-  const keyName = {
-    anthropic: 'ANTHROPIC_API_KEY',
-    openai: 'OPENAI_API_KEY',
-    google: 'GOOGLE_API_KEY',
-  }[provider];
-  if (!keyName) return { ok: false, error: `Unknown provider: ${provider}` };
-
-  if (apiKey?.trim()) await saveApiKey(keyName, apiKey.trim());
-  await saveProviderConfig(provider, model || '');
-
-  const testResult = await testLLMConnection();
-  if (!testResult.success) return { ok: false, error: testResult.error };
-  return { ok: true };
 }
 
 // ─── Step 2: Docker ───
 
 export async function checkDocker() {
   await requireOwner();
-  return pingDocker();
+  try {
+    return await pingDocker();
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
-export async function pullDefaultAgentImage() {
+// GhostBot coding-agent images are built locally (see src/containers/agents/).
+// They are NOT on a public registry, so we can't docker-pull them. Instead,
+// surface the build instructions so the owner knows how to create them.
+export async function getAgentImageBuildInstructions() {
   await requireOwner();
-  const { dockerApi } = await import('../tools/docker.js');
-  const res = await dockerApi('POST', '/images/create?fromImage=ghostbot&tag=coding-agent-aider');
-  if (res.status !== 200) {
-    return { ok: false, error: `Pull failed (${res.status}): ${JSON.stringify(res.data)}` };
-  }
-  return { ok: true };
+  return {
+    ok: true,
+    message: 'Agent images are built locally. See the build script under src/containers/agents/.',
+    commands: ['cd src/containers/agents', './build.sh'],
+  };
 }
 
 // ─── Step 3: GitHub ───
 
 export async function saveAndTestGithub({ token }) {
   await requireOwner();
-  if (!token?.trim()) {
-    const existing = getConfigSecret('GH_TOKEN');
-    if (!existing) return { ok: false, error: 'Token required' };
-  } else {
-    await saveGitHubConfig({ token: token.trim() });
+  try {
+    if (!token?.trim()) {
+      const existing = getConfigSecret('GH_TOKEN');
+      if (!existing) return { ok: false, error: 'Token required' };
+    } else {
+      await saveGitHubConfig({ token: token.trim() });
+    }
+    const result = await testGitHubConnection();
+    if (!result.success) return { ok: false, error: result.error };
+    return { ok: true, username: result.user?.login, scopes: result.scopes };
+  } catch (err) {
+    return { ok: false, error: err.message };
   }
-  const result = await testGitHubConnection();
-  if (!result.success) return { ok: false, error: result.error };
-  return { ok: true, username: result.user?.login, scopes: result.scopes };
 }
 
 export async function removeGithub() {
   await requireOwner();
-  await removeGitHubConfig();
-  setConfig('githubLastTestOk', 'false');
-  return { ok: true };
+  try {
+    await removeGitHubConfig();
+    setConfig('githubLastTestOk', 'false');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 // ─── Step 4: Notifications ───
 
 export async function saveAndTestTelegram({ botToken, chatId }) {
   await requireOwner();
-  if (botToken?.trim()) await saveTelegramConfig({ botToken: botToken.trim(), chatId });
   try {
+    if (botToken?.trim()) await saveTelegramConfig({ botToken: botToken.trim(), chatId });
     const { sendMessage } = await import('../tools/telegram.js');
     const token = getConfigSecret('TELEGRAM_BOT_TOKEN');
     await sendMessage(token, chatId, '👻 GhostBot setup test — you should see this if Telegram is wired up.');
@@ -145,20 +167,33 @@ export async function saveAndTestTelegram({ botToken, chatId }) {
 
 export async function removeTelegram() {
   await requireOwner();
-  await removeTelegramConfig();
-  return { ok: true };
+  try {
+    await removeTelegramConfig();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
-export async function saveAndTestSlack({ webhookUrl }) {
+export async function saveAndTestSlack({ botToken, channel }) {
   await requireOwner();
-  if (webhookUrl?.trim()) await saveSlackConfig({ botToken: webhookUrl.trim() });
-  const result = await testSlackConnection();
-  if (!result.success) return { ok: false, error: result.error };
-  return { ok: true };
+  try {
+    if (botToken?.trim()) await saveSlackConfig({ botToken: botToken.trim(), channel });
+    else if (channel !== undefined) await saveSlackConfig({ channel });
+    const result = await testSlackConnection();
+    if (!result.success) return { ok: false, error: result.error };
+    return { ok: true, team: result.team, user: result.user };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 export async function removeSlack() {
   await requireOwner();
-  await removeSlackConfig();
-  return { ok: true };
+  try {
+    await removeSlackConfig();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
