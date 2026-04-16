@@ -18,7 +18,7 @@ Audit identified 10 vulnerabilities; all patched in this batch. See [SECURITY.md
 - **Fixed** — Skills / memory / chat actions lacked ownership enforcement at the DB layer. Now filter on `id = ? AND user_id = ?`. ([e2a1c10](../../commit/e2a1c10))
 - **Fixed** — `/stream/chat` accepted `providedChatId` without verifying ownership, letting user B inject messages into user A's chat history. ([e2a1c10](../../commit/e2a1c10))
 - **Fixed** — `/api/crons` and `/api/triggers` leaked admin-only webhook/command config to any logged-in user. Now require `role === 'admin'`. ([e2a1c10](../../commit/e2a1c10))
-- **Fixed** — `/public/*.svg` and other static assets were 307-redirected to `/login` for anonymous visitors because the middleware matcher only excluded `_next`, `favicon.ico`, and `/assets/*`. Fast-path skip for all static-file extensions. ([89d08c2](../../commit/89d08c2))
+- **Fixed** — `/public/*.svg` and other static assets were 307-redirected to `/login` for anonymous visitors because the `proxy.js` matcher only excluded `_next`, `favicon.ico`, and `/assets/*`. Fast-path skip for all static-file extensions. ([89d08c2](../../commit/89d08c2))
 
 ### Added
 

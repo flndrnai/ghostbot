@@ -8,7 +8,7 @@ const { auth } = NextAuth(authConfig);
 // Acts as an edge-readable "first shown" flag so we don't have to
 // re-redirect them on every login. The DB still holds the authoritative
 // SETUP_WIZARD_FIRST_SHOWN_AT stamp — the cookie is just a performance
-// hint so middleware can decide without a DB read.
+// hint so proxy.js can decide without a DB read.
 const FIRST_SHOWN_COOKIE = 'gb_setup_seen';
 
 // Tiered rate limits for all /api/* routes. The in-process sliding-window
@@ -49,9 +49,9 @@ function getClientIpFromReq(req) {
   return 'unknown';
 }
 
-// Minimal in-middleware sliding-window check. Reuses the same globalThis
+// Minimal in-proxy sliding-window check. Reuses the same globalThis
 // bucket store that lib/rate-limit.js uses so a user can't bypass the
-// cap by alternating between the middleware path and per-route calls.
+// cap by alternating between the proxy path and per-route calls.
 if (!globalThis.__ghostbotRateLimit) {
   globalThis.__ghostbotRateLimit = { buckets: new Map(), lastSweep: 0 };
 }

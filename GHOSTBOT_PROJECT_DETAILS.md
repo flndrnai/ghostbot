@@ -163,8 +163,8 @@ thepopebot-main/
       line-mappers.js       # Per-agent JSON output parsers
     auth/
       config.js             # NextAuth route handler config
-      edge-config.js        # Edge-safe auth (middleware)
-      middleware.js          # Stale cookie cleanup
+      edge-config.js        # Edge-safe auth (proxy layer)
+      (note) proxy.js at src/ level handles route interception
       actions.js            # setupAdmin(), signOut()
       components/           # Login/setup forms
     db/
@@ -217,7 +217,7 @@ thepopebot-main/
       admin/                # Admin dashboard
       triggers/             # Webhook triggers UI
     server.js               # Custom Next.js server (WebSocket + code proxy)
-    middleware.js            # Auth middleware
+    proxy.js                 # Next 16 route interception (replaces old middleware.js)
   drizzle/                  # Auto-generated SQL migrations
   docs/                     # Extended documentation (20+ files)
 ```
@@ -286,7 +286,7 @@ The project is published as an npm package (`thepopebot`) with modular exports:
 - NextAuth v5 with credentials provider
 - First-user setup flow (admin creation)
 - JWT session strategy
-- Auth middleware for protected routes
+- Auth proxy for protected routes (`src/proxy.js`)
 
 **1.3 Configuration System**
 - DB-backed config with encrypted secrets
@@ -420,7 +420,7 @@ ThePapeBot runs Next.js 15. GhostBot targets **Next.js 16** which brings:
 - Improved Turbopack performance (faster dev builds)
 - Better React 19 integration
 - Enhanced server components
-- Improved middleware and Edge Runtime
+- Improved proxy (formerly middleware) and Edge Runtime
 - Better streaming support (critical for our chat UI)
 
 **3. First-Class Ollama / Self-Hosted LLM Support**

@@ -196,7 +196,7 @@ ghostbot/
 │   │   ├── i18n.js               # minimal t() helper
 │   │   └── projects/             # project-folder + file-system API
 │   ├── locales/                  # en.json, nl.json, fr.json
-│   ├── middleware.js             # Auth + owner-only /setup gating
+│   ├── proxy.js                  # Auth + owner-only /setup gating + rate limiting (Next 16 successor to middleware.js)
 │   ├── server.js                 # Custom server entry
 │   └── Dockerfile                # Production image
 ├── docs/
@@ -272,7 +272,7 @@ GhostBot is **designed to run inside your own perimeter** — a personal VPS, a 
 - Password hashing with bcrypt
 - Secrets at rest encrypted with AES-256-GCM, key derived via PBKDF2 from `AUTH_SECRET`
 - JWT sessions (NextAuth v5) with role + owner claims
-- Owner-only gating on `/setup` (middleware + server component + action-layer `requireOwner()`)
+- Owner-only gating on `/setup` (`src/proxy.js` + server component + action-layer `requireOwner()`)
 - Admin-only gating on `/admin/**`
 - Path-traversal defense on the Project Connect file API (absolute-path resolve + prefix check + `realpathSync` symlink check)
 - Drizzle ORM parameterizes every query (no string-concat SQL)

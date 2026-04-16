@@ -283,7 +283,7 @@ The core problem: nobody can discover, understand, or try GhostBot without alrea
 **Priority: CRITICAL** — this is the single highest-impact change.
 
 - Create a public `/` route that does NOT redirect to `/login`
-- Update the middleware to whitelist `/` as a public route
+- Update `src/proxy.js` to whitelist `/` as a public route
 - Content to include:
   - Hero: GhostBot icon + tagline ("Self-hosted AI coding agent platform")
   - Feature grid: 6–8 cards covering chat, agents, memory, clusters, Project Connect, notifications
@@ -423,7 +423,7 @@ ghostbot/
 
 - Work phase by phase, do not skip ahead
 - Each phase item gets its own commit with a descriptive message
-- Test locally before committing (especially route protection changes — Next.js middleware)
+- Test locally before committing (especially route protection changes — Next.js `proxy.js`, the successor to the old `middleware.js` convention)
 - Landing page must match existing brand tokens exactly — no new colors, no new fonts
 - Docker-compose must be tested with a clean `docker compose up -d` on a fresh machine
 - VS Code extension publish requires marketplace credentials — pause and ask
