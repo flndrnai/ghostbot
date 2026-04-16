@@ -30,15 +30,20 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (webhookSecret && signature) {
-    const expected = 'sha256=' + crypto.createHmac('sha256', webhookSecret).update(bodyText).digest('hex');
-    try {
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-        return new Response('Forbidden', { status: 403 });
-      }
-    } catch {
-      return new Response('Forbidden', { status: 403 });
-    }
+  // Fail closed. The previous `if (webhookSecret && signature)` gate let
+  // unauthenticated callers through when either was missing — enabling
+  // forged GitHub events to launch agent jobs with the admin's PAT.
+  if (!webhookSecret) {
+    return new Response('Webhook secret not configured', { status: 503 });
+  }
+  if (!signature) {
+    return new Response('Missing signature', { status: 403 });
+  }
+  const expected = 'sha256=' + crypto.createHmac('sha256', webhookSecret).update(bodyText).digest('hex');
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   const event = request.headers.get('x-github-event') || 'unknown';

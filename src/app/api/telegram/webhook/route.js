@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { getConfig } from '../../../../lib/config.js';
 import { getTelegramAdapter } from '../../../../lib/channels/index.js';
 import { chatStream } from '../../../../lib/ai/index.js';
@@ -10,10 +11,16 @@ export async function POST(request) {
   const limited = enforceRateLimit(request, 'telegram:webhook', { limit: 120, windowMs: 60 * 1000 });
   if (limited) return limited;
 
-  // Validate webhook secret
-  const secret = request.headers.get('x-telegram-bot-api-secret-token');
+  // Fail closed. Previously `if (expectedSecret && secret !== expectedSecret)`
+  // let unauthenticated callers through when the secret was unset server-side.
+  const secret = request.headers.get('x-telegram-bot-api-secret-token') || '';
   const expectedSecret = getConfig('TELEGRAM_WEBHOOK_SECRET');
-  if (expectedSecret && secret !== expectedSecret) {
+  if (!expectedSecret) {
+    return new Response('Telegram webhook secret not configured', { status: 503 });
+  }
+  const secBuf = Buffer.from(secret);
+  const expBuf = Buffer.from(expectedSecret);
+  if (secBuf.length !== expBuf.length || !crypto.timingSafeEqual(secBuf, expBuf)) {
     return new Response('Forbidden', { status: 403 });
   }
 
