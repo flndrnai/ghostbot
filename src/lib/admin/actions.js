@@ -53,6 +53,7 @@ export async function testLLMConnection() {
     const model = await createModel({ maxTokens: 50 });
     const response = await model.invoke([new HumanMessage('Say "hello" in one word.')]);
     const text = typeof response.content === 'string' ? response.content : 'OK';
+    setConfig(`${getConfig('LLM_PROVIDER')}LastTestOk`, 'true');
     return { success: true, response: text.slice(0, 200) };
   } catch (error) {
     let msg = error.message || 'Unknown error';
@@ -60,6 +61,7 @@ export async function testLLMConnection() {
     if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
       msg = 'Cannot connect to LLM API. Check your network connection and API key.';
     }
+    setConfig(`${getConfig('LLM_PROVIDER')}LastTestOk`, 'false');
     return { success: false, error: msg };
   }
 }
@@ -87,8 +89,10 @@ export async function testOllamaConnection(url) {
       parameterSize: m.details?.parameter_size || '',
       quantization: m.details?.quantization_level || '',
     }));
+    setConfig('ollamaLastTestOk', 'true');
     return { success: true, models };
   } catch (error) {
+    setConfig('ollamaLastTestOk', 'false');
     return { success: false, error: error.message };
   }
 }
@@ -149,8 +153,11 @@ export async function testGitHubConnection() {
   await requireAdmin();
   try {
     const { testGitHubConnection: test } = await import('../tools/github.js');
-    return await test();
+    const result = await test();
+    setConfig('githubLastTestOk', result.success ? 'true' : 'false');
+    return result;
   } catch (error) {
+    setConfig('githubLastTestOk', 'false');
     return { success: false, error: error.message };
   }
 }
