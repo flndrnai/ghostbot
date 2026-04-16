@@ -5,6 +5,7 @@ import { MobilePageHeader } from '../../lib/chat/components/mobile-page-header.j
 
 const SECTIONS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'getting-started', label: 'Getting started' },
   { id: 'llm-providers', label: 'LLM Providers' },
   { id: 'ollama', label: 'Ollama' },
   { id: 'chat', label: 'Chat Settings' },
@@ -26,6 +27,9 @@ const SECTIONS = [
   { id: 'attachments', label: 'File & image attachments' },
   { id: 'vscode', label: 'VS Code extension' },
   { id: 'setup-checklist', label: 'Setup order' },
+  { id: 'project-connect-guide', label: 'Project Connect guide' },
+  { id: 'clusters-guide', label: 'Clusters guide' },
+  { id: 'troubleshooting', label: 'Troubleshooting' },
 ];
 
 export function DocsContent() {
@@ -101,6 +105,50 @@ export function DocsContent() {
                 bare-minimum setup is just <strong>LLM Providers</strong> + <strong>Ollama</strong>. Everything
                 else is optional and additive.
               </p>
+            </Section>
+
+            <Section id="getting-started" title="Getting started — your first 10 minutes">
+              <p className="text-sm">
+                The setup wizard at <code>/setup</code> walks the owner through the essentials on first
+                login. This section is for after the wizard — what to do with the app now that it works.
+              </p>
+
+              <Block label="1. Open your first chat">
+                After completing the wizard you land on <code>/</code> (or your most recent chat).
+                Type anything — <em>"what can you do?"</em> is a fair first question. The reply streams
+                token-by-token over SSE; code blocks come with copy buttons.
+              </Block>
+
+              <Block label="2. Paste a screenshot if your model supports vision">
+                With a vision-capable LLM (Ollama multimodal, Claude Sonnet, GPT-4o, Gemini), paste an
+                image from your clipboard. GhostBot auto-resizes to ≈1 MB and sends it alongside the
+                text. Great for "what's wrong with this UI?" or "what does this diagram mean?"
+              </Block>
+
+              <Block label="3. Connect a project">
+                Go to <strong>Projects</strong> (sidebar) → <em>Add project</em>. Either upload a folder,
+                paste a git URL to clone, or point at an existing path on the server. Every project has
+                a <code>CLAUDE.md</code> that gets auto-injected into the system prompt when that
+                project is attached to a chat. Think of it as the project's "permanent context".
+              </Block>
+
+              <Block label="4. Fire your first agent job">
+                In any chat with a project attached, click the wrench icon. Write a prompt like
+                <em>"Add a README section explaining the setup wizard"</em>, pick Aider (default),
+                click Launch. A live job card appears in the chat. You can watch the container logs
+                stream, see the PR URL when it pushes, and click View Diff to inspect changes inline.
+              </Block>
+
+              <Block label="5. Set up notifications (optional)">
+                If you want to know when agent jobs finish without staring at the UI, wire up
+                Telegram or Slack under Admin. You'll get a ping the moment the job succeeds or fails.
+              </Block>
+
+              <Block label="When things go sideways">
+                Jump to the <a href="#troubleshooting" className="underline">Troubleshooting</a> section.
+                It covers the top-5 papercuts: LLM errors, agent jobs that won't launch, GitHub PAT
+                scope problems, Telegram delivery issues, memory / embedding failures.
+              </Block>
             </Section>
 
             <Section id="llm-providers" title="1. LLM Providers">
@@ -694,6 +742,193 @@ export function DocsContent() {
                 Each section above explains what it does and why. When you&apos;re ready to tackle
                 GitHub or Telegram, just say the word and we&apos;ll do it together step by step.
               </p>
+            </Section>
+
+            <Section id="project-connect-guide" title="Project Connect — deep dive">
+              <p className="text-sm">
+                Project Connect is the feature that turns GhostBot from "AI chat" into "AI that can
+                actually touch your code". This is how it works end-to-end.
+              </p>
+
+              <Block label="What a project is">
+                A <em>project</em> in GhostBot is a folder on the server with a name, a description,
+                and a path. The folder can be empty (you&apos;ll fill it later), freshly cloned from
+                a git URL, or populated by drag-and-drop upload. Each project gets its own
+                <code>CLAUDE.md</code> file — the living source of truth the LLM reads on every turn.
+              </Block>
+
+              <Block label="Creating a project — three ways">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><strong>Upload</strong> — drag a folder from your desktop onto the Projects page</li>
+                  <li><strong>Clone</strong> — paste a git URL; GhostBot runs <code>git clone --depth 1</code> into a fresh project folder (the URL is validated against a strict allowlist — no shell metacharacters)</li>
+                  <li><strong>Connect existing</strong> — point at a path that already exists on the server (useful for Dokploy-managed project folders)</li>
+                </ul>
+              </Block>
+
+              <Block label="Attaching a project to a chat">
+                Open any chat, click the folder icon in the input bar, pick a project. You&apos;ll see:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>A file-tree panel with click-to-attach buttons (attached files get embedded as fenced code blocks in the next message)</li>
+                  <li>The project&apos;s <code>CLAUDE.md</code> contents injected into the system prompt — so the LLM always knows what the project is, its conventions, and its current state</li>
+                  <li>The "wrench" agent-job launcher, now pre-configured to mount this project into the agent container</li>
+                </ul>
+              </Block>
+
+              <Block label="CLAUDE.md — what to put in it">
+                The <code>CLAUDE.md</code> at each project root is your "talk to the LLM once,
+                remember forever" file. Good contents:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li><strong>What is this project?</strong> — one paragraph</li>
+                  <li><strong>Tech stack + conventions</strong> — "we use X, not Y", "prefer Tailwind over CSS modules"</li>
+                  <li><strong>What&apos;s shipped</strong> + <strong>what&apos;s parked</strong> — lets the LLM reason about current state</li>
+                  <li><strong>Code conventions</strong> — naming, file layout, architectural rules</li>
+                  <li><strong>Known issues</strong> — things you don&apos;t want the LLM to break</li>
+                </ul>
+                The GhostBot repo&apos;s own <code>CLAUDE.md</code> is a good template — it&apos;s
+                the file the builder-loop auto-updates after each shipped feature.
+              </Block>
+
+              <Block label="Launching agents on a project">
+                With a project attached, clicking the wrench icon opens the agent-job launcher. Pick
+                the agent (Aider is the default and works with any LLM), write a prompt, launch. The
+                agent container starts with:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>Your project folder bind-mounted at <code>/home/coding-agent/workspace</code></li>
+                  <li>Your GitHub PAT injected as an env var (if configured)</li>
+                  <li>Your LLM credentials injected (Ollama URL, or API key)</li>
+                  <li>Resource limits: 2 GB memory, 1 CPU, 256 PIDs, 15-min wall-clock timeout</li>
+                </ul>
+                It edits files in place. When it finishes (or pushes a branch), the job card in your
+                chat updates with status, logs, and a PR URL if applicable.
+              </Block>
+
+              <Block label="File-system API safety">
+                The Project Connect file API has belt-and-suspenders path-traversal defense: absolute-
+                path resolve, prefix check against the project root, and a <code>realpathSync</code>
+                symlink check. You can&apos;t attach files outside the project folder even by crafting
+                a symlink. See <code>src/lib/projects/files.js</code> if you want to verify.
+              </Block>
+            </Section>
+
+            <Section id="clusters-guide" title="Clusters — multi-role agent pipelines">
+              <p className="text-sm">
+                A cluster is a sequence of agent roles that runs as a single button-click. Use it when
+                one agent isn&apos;t enough — for example a "plan → review → implement → test" flow,
+                or a "summarise incoming issues → triage → tag" pipeline.
+              </p>
+
+              <Block label="Cluster anatomy">
+                Each cluster has:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li><strong>A name</strong> and an optional system prompt that prepends to every role&apos;s prompt</li>
+                  <li><strong>Roles</strong> in execution order — each role is an agent-job config (agent type, prompt, branch, etc.)</li>
+                  <li>Roles can optionally declare a <strong>trigger</strong> (cron, webhook, file watch) to run automatically</li>
+                </ul>
+              </Block>
+
+              <Block label="Running a cluster manually">
+                Open <strong>Clusters</strong> in the sidebar, pick a cluster, click <em>Run now</em>.
+                The roles execute sequentially — each job gets the previous role&apos;s output appended
+                to its prompt as context (capped at 2000 chars to fit in the LLM window). The cluster
+                page shows live progress across all roles; each role&apos;s container logs stream into
+                its own expandable panel.
+              </Block>
+
+              <Block label="Built-in templates">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><strong>PR Reviewer</strong> — planner → reviewer → summariser. Good for "what did this PR actually do?"</li>
+                  <li><strong>Docs Writer</strong> — extractor → writer → editor. Generates/updates README sections from code</li>
+                  <li><strong>Test Coverage Bot</strong> — coverage analyser → test writer → test runner. Fills coverage gaps</li>
+                  <li><strong>Dependency Updater</strong> — outdated scanner → updater → test runner. Patches-then-verifies</li>
+                </ul>
+                Create from template: Clusters page → <em>New from template</em> → pick one. You get
+                a pre-wired cluster you can customise.
+              </Block>
+
+              <Block label="Cluster webhooks">
+                Each role can expose a signed webhook endpoint at
+                <code>/api/clusters/[clusterId]/roles/[roleId]/webhook</code>. Set
+                <code>triggerConfig.webhookSecret</code> in the role config and the endpoint will
+                accept HMAC-SHA256 signed payloads. The payload is available as
+                <code>{'{{WEBHOOK_PAYLOAD}}'}</code> in the role&apos;s prompt template. Useful for
+                "GitHub push → run coverage bot" style integrations.
+              </Block>
+
+              <Block label="Cross-user isolation">
+                Clusters are per-user. User B cannot see, edit, run, or delete user A&apos;s clusters
+                — the server actions all enforce ownership at the DB layer. If you&apos;re running
+                a multi-user install, each person gets their own cluster library.
+              </Block>
+            </Section>
+
+            <Section id="troubleshooting" title="Troubleshooting — common issues">
+              <Block label='"No response streaming" / "LLM error"'>
+                Almost always an LLM connectivity issue:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>Admin → Ollama → click <em>Test Connection</em>. Red = URL wrong, firewall, or Ollama down</li>
+                  <li>Admin → LLM Providers → confirm the active model matches <code>ollama list</code> exactly (case + tag)</li>
+                  <li>For cloud providers: re-save the API key; a silent decrypt failure (ENCRYPTION_KEY rotated?) shows as "No API key configured"</li>
+                  <li>Check your Ollama VPS logs — cold starts for 32B models take 30-90s on first request</li>
+                </ul>
+              </Block>
+
+              <Block label='"Agent job won&apos;t launch"'>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Admin → Containers: does the page load? If blank, the docker-proxy sidecar isn&apos;t running. <code>docker compose ps</code> should show <code>ghostbot-docker-proxy</code> healthy</li>
+                  <li>Is the agent image built? <code>docker images | grep ghostbot:coding-agent</code> on the host. If missing, SSH to the VPS and run <code>./docker/build.sh</code></li>
+                  <li>Check the job&apos;s error output — Docker "no such image" means step 2, an HTTP 403 from the proxy means the API verb isn&apos;t in the allowlist (see <a href="#docker-mount" className="underline">Docker mount</a>)</li>
+                </ul>
+              </Block>
+
+              <Block label='"GitHub PR wasn&apos;t opened"'>
+                The agent pushed a branch but no PR showed up:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>Your PAT needs these fine-grained scopes on the target repo: <strong>Contents</strong> rw, <strong>Pull requests</strong> rw, <strong>Issues</strong> r</li>
+                  <li>The repo must allow branch creation from the PAT&apos;s user</li>
+                  <li>Admin → GitHub → Test Connection should show <code>@your-username</code> + the scopes list</li>
+                  <li>If using SSO orgs, the PAT needs to be authorised for the org separately</li>
+                </ul>
+              </Block>
+
+              <Block label='"Telegram / Slack test message never arrived"'>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Telegram: did you <em>start</em> a chat with your bot first? The bot can&apos;t DM you until you send it a message. Chat ID must be from that same conversation</li>
+                  <li>Telegram webhook endpoints now require <code>TELEGRAM_WEBHOOK_SECRET</code> to be set in admin. Unset = 503 on all webhook requests (intentional fail-closed)</li>
+                  <li>Slack: <code>chat:write</code> scope required, bot must be invited to the channel, and the channel ID must be the internal ID (starts with C...) not the #name</li>
+                </ul>
+              </Block>
+
+              <Block label='"Memory / RAG not finding past chats"'>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Is <code>nomic-embed-text</code> pulled on your Ollama host? Memory requires it</li>
+                  <li>Check Admin → Memory — entry count greater than zero? If zero, no chats have been summarised yet (requires at least a few back-and-forth turns)</li>
+                  <li>Per-chat <em>Memory enabled</em> toggle in chat settings — defaults to on, but a previous toggle-off persists</li>
+                  <li>Embeddings are 768-dim from nomic-embed-text. If you switched embedding models mid-flight, old vectors are incompatible with new queries. Re-seed by starting fresh chats</li>
+                </ul>
+              </Block>
+
+              <Block label='"Setup wizard keeps redirecting me"'>
+                The owner-redirect cookie might be missing:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>Complete the wizard once (reach step 5, click <em>Start using GhostBot →</em>) — that sets <code>SETUP_WIZARD_COMPLETED_AT</code> + the <code>gb_setup_seen</code> cookie</li>
+                  <li>Clearing cookies triggers one more redirect — acceptable trade-off, not a bug</li>
+                  <li>If you&apos;re stuck in a loop, visit <code>/admin</code> directly — the wizard is owner-only; admin/user accounts land on admin as normal</li>
+                </ul>
+              </Block>
+
+              <Block label='"Static assets (logos, icons) return 404 or log in"'>
+                Fixed in commit 89d08c2 — <code>src/proxy.js</code> now fast-paths requests with
+                static-file extensions past the auth check. If you see this on an older deploy,
+                pull main and rebuild.
+              </Block>
+
+              <Block label="Where to dig further">
+                Two useful places:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li><strong>Dokploy logs</strong> — every unhandled error surfaces here first. Look for rate-limit 429s, docker-proxy 403s, auth errors</li>
+                  <li><strong>CLAUDE.md</strong> (in the repo root) — the &quot;What&apos;s shipped&quot; and &quot;Security hardening follow-ups&quot; sections tell you exactly what&apos;s wired up and what isn&apos;t yet</li>
+                </ul>
+              </Block>
             </Section>
 
           </div>
