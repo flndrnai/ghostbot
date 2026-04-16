@@ -33,13 +33,14 @@ export async function listSkillsAction() {
 }
 
 export async function updateSkillAction(id, updates) {
-  await requireAuth();
-  updateSkill(id, updates);
+  const session = await requireAuth();
+  // Ownership enforced in updateSkill via `id = ? AND user_id = ?`.
+  updateSkill(id, updates, session.user.id);
   return { success: true };
 }
 
 export async function deleteSkillAction(id) {
-  await requireAuth();
-  deleteSkill(id);
+  const session = await requireAuth();
+  deleteSkill(id, session.user.id);
   return { success: true };
 }

@@ -139,11 +139,12 @@ export async function addManualEntry({ title, content }) {
 }
 
 export async function removeMemoryEntry(id, kind = 'entry') {
-  await requireUser();
+  const session = await requireUser();
+  // Ownership enforced in the DB layer via `id = ? AND user_id = ?`.
   if (kind === 'summary') {
-    deleteChatSummary(id);
+    deleteChatSummary(id, session.user.id);
   } else {
-    deleteKnowledgeEntry(id);
+    deleteKnowledgeEntry(id, session.user.id);
   }
   return { success: true };
 }

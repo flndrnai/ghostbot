@@ -50,9 +50,15 @@ export async function saveKnowledgeEntry({
   return { id, hasEmbedding: !!embedding };
 }
 
-export function deleteKnowledgeEntry(id) {
+export function deleteKnowledgeEntry(id, userId) {
   const db = getDb();
-  db.delete(knowledgeEntries).where(eq(knowledgeEntries.id, id)).run();
+  // Ownership enforced at the DB layer when userId is supplied: rows
+  // are deleted only if both id AND user_id match. Foreign entries
+  // survive. Callers in server actions MUST pass userId.
+  const where = userId
+    ? and(eq(knowledgeEntries.id, id), eq(knowledgeEntries.userId, userId))
+    : eq(knowledgeEntries.id, id);
+  db.delete(knowledgeEntries).where(where).run();
 }
 
 export function listKnowledgeEntries({ userId = null, limit = 100, offset = 0 } = {}) {
@@ -141,9 +147,12 @@ export function getChatSummary(chatId) {
   return db.select().from(chatSummaries).where(eq(chatSummaries.chatId, chatId)).get();
 }
 
-export function deleteChatSummary(id) {
+export function deleteChatSummary(id, userId) {
   const db = getDb();
-  db.delete(chatSummaries).where(eq(chatSummaries.id, id)).run();
+  const where = userId
+    ? and(eq(chatSummaries.id, id), eq(chatSummaries.userId, userId))
+    : eq(chatSummaries.id, id);
+  db.delete(chatSummaries).where(where).run();
 }
 
 /**

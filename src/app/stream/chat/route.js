@@ -2,6 +2,7 @@ import { auth } from '../../../lib/auth/config.js';
 import { chatStream } from '../../../lib/ai/index.js';
 import { enforceRateLimit } from '../../../lib/rate-limit.js';
 import { markChatStreaming, markChatDone, isChatStreaming } from '../../../lib/ai/live-chats.js';
+import { getChatById } from '../../../lib/db/chats.js';
 
 export async function POST(request) {
   // 30 chat messages per minute per IP
@@ -27,6 +28,18 @@ export async function POST(request) {
   }
 
   const chatId = providedChatId || crypto.randomUUID();
+
+  // Ownership enforcement. If the client supplied a chatId that already
+  // exists, it MUST belong to the authenticated user — otherwise any
+  // logged-in user could inject messages into another user's chat
+  // history simply by guessing/leaking their chat UUID. If the id does
+  // not exist yet, chatStream will create it with this userId.
+  if (providedChatId) {
+    const existing = getChatById(providedChatId);
+    if (existing && existing.userId !== session.user.id) {
+      return new Response('Forbidden', { status: 403 });
+    }
+  }
 
   // Guard against duplicate concurrent requests for the same chat.
   // If one is already running, reject the second — the client would

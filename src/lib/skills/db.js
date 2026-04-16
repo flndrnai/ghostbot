@@ -48,16 +48,24 @@ export function listSkillsByUser(userId) {
     .all();
 }
 
-export function updateSkill(id, updates) {
+export function updateSkill(id, updates, userId) {
   const db = getDb();
   const fields = { ...updates, updatedAt: Date.now() };
   if (fields.slug) {
     fields.slug = fields.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   }
-  db.update(skills).set(fields).where(eq(skills.id, id)).run();
+  // Ownership is enforced at the DB layer — rows are updated only if
+  // both the id AND the userId match. Foreign skills are untouched.
+  const where = userId
+    ? and(eq(skills.id, id), eq(skills.userId, userId))
+    : eq(skills.id, id);
+  db.update(skills).set(fields).where(where).run();
 }
 
-export function deleteSkill(id) {
+export function deleteSkill(id, userId) {
   const db = getDb();
-  db.delete(skills).where(eq(skills.id, id)).run();
+  const where = userId
+    ? and(eq(skills.id, id), eq(skills.userId, userId))
+    : eq(skills.id, id);
+  db.delete(skills).where(where).run();
 }
