@@ -316,6 +316,17 @@ Please **do not open a public GitHub issue** for security reports. Email the mai
 
 ---
 
+## Scaling
+
+GhostBot is designed for **single-server, single-owner or small-team** deployments. See [docs/SCALING.md](docs/SCALING.md) for:
+
+- what a single instance handles comfortably (and where the ceiling actually is)
+- signals that you're approaching the ceiling
+- the three-step horizontal scaling migration path (Redis pub/sub → Postgres/Turso → multi-Ollama)
+- what GhostBot explicitly does NOT try to do (multi-region active-active, serverless, multi-pod K8s)
+
+---
+
 ## Roadmap
 
 Tracked in detail in [CLAUDE.md §Annex](CLAUDE.md) and `docs/superpowers/`:
