@@ -6,14 +6,39 @@ const ITERATIONS = 100000;
 const KEY_LENGTH = 32;
 
 let cachedKey = null;
+let fallbackWarned = false;
 
 function getKey() {
   if (cachedKey) return cachedKey;
 
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error('AUTH_SECRET is required for encryption');
+  // Prefer a dedicated ENCRYPTION_KEY. Splitting this from AUTH_SECRET
+  // means rotating session signing keys (AUTH_SECRET) doesn't force
+  // re-encryption of every secret in the DB, and a leak of AUTH_SECRET
+  // doesn't automatically compromise stored API keys / PATs.
+  //
+  // For backward compatibility, fall back to AUTH_SECRET if
+  // ENCRYPTION_KEY is unset. Existing installs keep working; new
+  // installs should set both (same value or different — same is fine
+  // as a starting point, different is better).
+  const encKey = process.env.ENCRYPTION_KEY;
+  const authSecret = process.env.AUTH_SECRET;
 
-  cachedKey = crypto.pbkdf2Sync(secret, SALT, ITERATIONS, KEY_LENGTH, 'sha256');
+  const source = encKey || authSecret;
+  if (!source) {
+    throw new Error('ENCRYPTION_KEY or AUTH_SECRET is required for encryption');
+  }
+
+  if (!encKey && authSecret && !fallbackWarned) {
+    console.warn(
+      '[crypto] ENCRYPTION_KEY is unset — falling back to AUTH_SECRET for ' +
+      'at-rest encryption. For stronger defense-in-depth, set a dedicated ' +
+      'ENCRYPTION_KEY (openssl rand -base64 32) and re-save each secret ' +
+      'via the admin UI to re-encrypt under the new key.',
+    );
+    fallbackWarned = true;
+  }
+
+  cachedKey = crypto.pbkdf2Sync(source, SALT, ITERATIONS, KEY_LENGTH, 'sha256');
   return cachedKey;
 }
 
