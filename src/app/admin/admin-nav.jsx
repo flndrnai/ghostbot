@@ -8,6 +8,7 @@ import { ChevronDown } from '../../lib/icons/index.jsx';
 
 // Core links stay as flat row tabs.
 const coreTabs = [
+  { href: '/setup', label: 'Setup' },
   { href: '/admin/llms', label: 'LLM Providers' },
   { href: '/admin/ollama', label: 'Ollama' },
   { href: '/admin/chat', label: 'Chat' },
