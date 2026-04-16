@@ -196,9 +196,22 @@ Host  ───┬─ ghostbot Docker container (Dokploy-managed)
 | Item | Reason |
 |---|---|
 | Light mode fine-tuning | Basic light mode + toggle shipped; may need per-component polish |
-| Rate limiting on remaining `/api` routes | Core routes covered; remaining are low-risk admin-only |
 | `/api/agent-jobs/diff` for non-succeeded jobs | Diff comes from GitHub compare which only exists post-push |
 | VS Code Marketplace publishing | Extension v0.2 built; needs final packaging and publish |
+
+---
+
+## Security hardening follow-ups
+
+The security audit (April 2026) identified 10 vulnerabilities, all patched in commits `3e17431..e2a1c10`. The following hardening items remain as follow-ups — concrete, non-blocking but worth doing before scaling beyond a single trusted admin:
+
+| Item | Why | Status |
+|---|---|---|
+| Agent container resource limits (Memory / NanoCpus / PidsLimit / wall-clock timeout) | A hostile or runaway agent can still exhaust the host. Enforce limits in `src/lib/tools/docker.js` `runContainer`. | Planned |
+| `docker-socket-proxy` | `/var/run/docker.sock` bind-mount grants host-root-equivalent privilege. Put it behind `tecnativa/docker-socket-proxy` with a restrictive allowlist (`containers/create`, `start`, `logs`, `remove`). | Planned |
+| Split `ENCRYPTION_KEY` from `AUTH_SECRET` | Leaking `AUTH_SECRET` today compromises every encrypted secret. Separate keys let you rotate auth without re-encrypting the DB. | Planned |
+| CI/CD (GitHub Actions: lint+build on PR, release on tag → GHCR) + first Vitest + Playwright suite | Currently only Vitest unit tests (9) + ad-hoc manual QA. | Planned |
+| Extend rate limiting to every `/api/*` route | Currently covers chat, webhooks, clone, auth. Admin-only routes still uncovered. | Planned |
 
 ---
 
@@ -468,6 +481,3 @@ The site at ghostbot.dev is deployed and serving a real Next.js app. The core de
 
 The product itself is impressively complete for a solo build — 111 commits, 15 DB tables, 4 agent integrations, cluster pipelines, memory/RAG, multi-user, notifications. The engineering is serious. The problem is purely **packaging and presentation**: there's no front door, no visual proof, and no discoverability. The README reads like a product that should have 500+ GitHub stars but nobody can find it yet. Fix the landing page and the repo presentation, and this becomes genuinely competitive in the self-hosted AI agent space alongside tools like Open WebUI and Aider.
 
-### Known Local Dev Issue
-
-There is a stray empty `package-lock.json` at the repo root (no corresponding `package.json`) that confuses Next.js's workspace root detection and prevents `next dev` from starting locally. The app itself deploys fine via Dokploy since the Dockerfile builds from `src/`. This should be removed or gitignored.

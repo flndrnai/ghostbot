@@ -1,4 +1,19 @@
-# GhostBot - Project Details & Build Guide
+# [ARCHIVE] GhostBot — Scoping & Build Guide (pre-implementation)
+
+> This document is a historical scoping brief written BEFORE the initial
+> implementation. It references ThePapeBot as the inspiration and describes
+> the intended architecture. For what was actually built and how to work
+> on the current codebase, see:
+>
+> - **[CLAUDE.md](CLAUDE.md)** — entrypoint for any Claude session, lists what's shipped and what's parked
+> - **[README.md](README.md)** — user-facing overview, quick-start, security posture
+> - **[docs/OLLAMA_QWEN_SETUP.md](docs/OLLAMA_QWEN_SETUP.md)** — Ollama VPS setup and KVM8 migration
+> - **[docs/superpowers/](docs/superpowers/)** — design specs and implementation plans for major features
+>
+> Kept for context on the "why" behind architectural decisions.
+
+---
+
 
 ## What is the Reference Project (ThePapeBot)?
 
