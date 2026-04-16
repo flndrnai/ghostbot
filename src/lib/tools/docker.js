@@ -9,6 +9,46 @@ import { PROJECT_ROOT } from '../paths.js';
 const workspacesDir = path.join(PROJECT_ROOT, 'data/workspaces');
 const CODING_AGENT_UID = 1001;
 
+// ─── Agent container resource limits (Phase 3.2) ───
+// A misbehaving or hostile agent must not be able to exhaust the host.
+// Values can be overridden per install via env or admin-settable config.
+// Numbers chosen for a solo / small-team deployment — adjust up if you
+// run chunkier models or large repos.
+
+function readLimit(key, fallback) {
+  const raw = getConfig(key);
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+export function getAgentContainerLimits() {
+  // Memory: 2 GB default. The Aider image + a small repo easily fits.
+  // Bump if you see OOMs on large codebases.
+  const memoryMb = readLimit('AGENT_MEMORY_LIMIT_MB', 2048);
+  // CPU: 1 full core default. NanoCPUs = 1e9 = 1 CPU.
+  const cpuCores = readLimit('AGENT_CPU_LIMIT', 1);
+  // Pids: 256 is plenty for any coding-agent process tree and prevents fork bombs.
+  const pidsLimit = readLimit('AGENT_PIDS_LIMIT', 256);
+
+  return {
+    Memory: Math.round(memoryMb * 1024 * 1024),
+    MemorySwap: Math.round(memoryMb * 1024 * 1024), // disable swap by matching Memory
+    NanoCPUs: Math.round(cpuCores * 1_000_000_000),
+    PidsLimit: pidsLimit,
+    // Defense in depth — block setuid escalation inside the container.
+    SecurityOpt: ['no-new-privileges'],
+  };
+}
+
+// Wall-clock timeout is enforced at the agent-jobs orchestration layer
+// (polling loop in src/lib/agent-jobs/), not on the container HostConfig —
+// Docker has no native "kill after N seconds from creation" feature.
+// Default: 15 minutes. Override via env or `AGENT_TIMEOUT_SEC` in admin config.
+export function getAgentTimeoutMs() {
+  return readLimit('AGENT_TIMEOUT_SEC', 900) * 1000;
+}
+
 // ─── Docker Frame Parser ───
 
 export class DockerFrameParser {
@@ -119,10 +159,23 @@ async function detectNetwork() {
 
 // ─── Container Lifecycle ───
 
-export async function runContainer({ containerName, image, env = [], workingDir, hostConfig = {} }) {
+export async function runContainer({ containerName, image, env = [], workingDir, hostConfig = {}, applyAgentLimits = true }) {
   const network = await detectNetwork();
   if (!hostConfig.NetworkMode) {
     hostConfig.NetworkMode = network;
+  }
+
+  // Phase 3.2: apply agent resource limits by default for every container
+  // this module launches. Caller-supplied values in hostConfig take
+  // precedence so existing tests / callers can override as needed.
+  // Pass applyAgentLimits: false to opt out (e.g. for infra containers).
+  if (applyAgentLimits) {
+    const limits = getAgentContainerLimits();
+    if (hostConfig.Memory === undefined) hostConfig.Memory = limits.Memory;
+    if (hostConfig.MemorySwap === undefined) hostConfig.MemorySwap = limits.MemorySwap;
+    if (hostConfig.NanoCPUs === undefined) hostConfig.NanoCPUs = limits.NanoCPUs;
+    if (hostConfig.PidsLimit === undefined) hostConfig.PidsLimit = limits.PidsLimit;
+    if (!hostConfig.SecurityOpt) hostConfig.SecurityOpt = limits.SecurityOpt;
   }
 
   // Pull image if not present

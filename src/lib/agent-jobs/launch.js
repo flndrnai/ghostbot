@@ -10,7 +10,7 @@ import http from 'http';
 import path from 'path';
 import { getConfig } from '../config.js';
 import { getConfigSecret } from '../db/config.js';
-import { dockerApi, DockerFrameParser, resolveHostPath } from '../tools/docker.js';
+import { dockerApi, DockerFrameParser, resolveHostPath, getAgentContainerLimits, getAgentTimeoutMs } from '../tools/docker.js';
 import { getChatById } from '../db/chats.js';
 import { getProjectById, resolveProjectPath } from '../db/projects.js';
 import {
@@ -175,8 +175,19 @@ async function runJobContainer({ jobId, containerName, image, env, hostProjectPa
     return;
   }
 
-  // Create the container (with optional project folder bind mount)
-  const hostConfig = { AutoRemove: false };
+  // Create the container (with optional project folder bind mount).
+  // Phase 3.2: enforce resource limits so a hostile or runaway agent
+  // can't exhaust the host. Defaults: 2 GB memory, 1 CPU, 256 PIDs,
+  // no-new-privileges. Configurable via AGENT_* settings keys.
+  const limits = getAgentContainerLimits();
+  const hostConfig = {
+    AutoRemove: false,
+    Memory: limits.Memory,
+    MemorySwap: limits.MemorySwap,
+    NanoCPUs: limits.NanoCPUs,
+    PidsLimit: limits.PidsLimit,
+    SecurityOpt: limits.SecurityOpt,
+  };
   if (hostProjectPath) {
     hostConfig.Binds = [`${hostProjectPath}:/home/coding-agent/workspace`];
   }
@@ -241,9 +252,30 @@ async function runJobContainer({ jobId, containerName, image, env, hostProjectPa
     req.end();
   });
 
-  // Wait for container to actually exit
-  const waitRes = await dockerApi('POST', `/containers/${containerId}/wait`);
-  const exitCode = waitRes?.data?.StatusCode ?? -1;
+  // Wait for container to exit, bounded by a wall-clock timeout (Phase 3.2).
+  // Docker has no native "kill after N seconds" — we race the wait API
+  // against a setTimeout and force-remove if we hit the deadline.
+  const timeoutMs = getAgentTimeoutMs();
+  let timedOut = false;
+  let timeoutHandle;
+  const timeoutPromise = new Promise((resolve) => {
+    timeoutHandle = setTimeout(() => {
+      timedOut = true;
+      // Best-effort kill; the wait promise will then resolve with whatever
+      // status Docker records when the container dies.
+      dockerApi('POST', `/containers/${containerId}/kill`).catch(() => {});
+      resolve({ data: { StatusCode: -1 } });
+    }, timeoutMs);
+  });
+  const waitRes = await Promise.race([
+    dockerApi('POST', `/containers/${containerId}/wait`),
+    timeoutPromise,
+  ]);
+  if (timeoutHandle) clearTimeout(timeoutHandle);
+  const exitCode = timedOut ? -1 : (waitRes?.data?.StatusCode ?? -1);
+  if (timedOut) {
+    appendAgentJobOutput(jobId, `\n[ghostbot] agent container exceeded ${timeoutMs / 1000}s timeout and was killed.\n`);
+  }
 
   // Derive a PR URL heuristically from the output
   const jobNow = getAgentJob(jobId);
