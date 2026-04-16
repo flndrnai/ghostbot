@@ -25,6 +25,27 @@ async function requireAuth() {
   return session;
 }
 
+// Fetch the cluster and verify it belongs to the caller. Any mismatch
+// surfaces as 'Not found' so that user B cannot probe for existence
+// of user A's cluster ids.
+async function requireClusterOwner(clusterId) {
+  const session = await requireAuth();
+  const cluster = getClusterById(clusterId);
+  if (!cluster || cluster.userId !== session.user.id) {
+    throw new Error('Cluster not found');
+  }
+  return { session, cluster };
+}
+
+async function requireRoleOwner(roleId) {
+  const session = await requireAuth();
+  const role = getRoleWithCluster(roleId);
+  if (!role || role.cluster?.userId !== session.user.id) {
+    throw new Error('Role not found');
+  }
+  return { session, role };
+}
+
 // ─── Clusters ───
 
 export async function getClusters() {
@@ -33,9 +54,9 @@ export async function getClusters() {
 }
 
 export async function getCluster(clusterId) {
-  await requireAuth();
+  const session = await requireAuth();
   const cluster = getClusterById(clusterId);
-  if (!cluster) return null;
+  if (!cluster || cluster.userId !== session.user.id) return null;
   const roles = getClusterRolesByCluster(clusterId);
   return { ...cluster, roles };
 }
@@ -84,32 +105,32 @@ export async function createClusterFromTemplateAction(templateId) {
 }
 
 export async function renameClusterAction(clusterId, name) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   updateCluster(clusterId, { name });
   return { success: true };
 }
 
 export async function toggleClusterAction(clusterId) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   const enabled = toggleClusterEnabled(clusterId);
   reloadClusterRuntime();
   return { enabled };
 }
 
 export async function starClusterAction(clusterId) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   const starred = toggleClusterStarred(clusterId);
   return { starred };
 }
 
 export async function updateClusterSystemPromptAction(clusterId, systemPrompt) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   updateCluster(clusterId, { systemPrompt });
   return { success: true };
 }
 
 export async function deleteClusterAction(clusterId) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   dbDeleteCluster(clusterId);
   reloadClusterRuntime();
   return { success: true };
@@ -178,37 +199,33 @@ export async function runClusterNowAction(clusterId) {
 // ─── Roles ───
 
 export async function createClusterRoleAction(clusterId, roleName) {
-  await requireAuth();
+  await requireClusterOwner(clusterId);
   const result = dbCreateRole(clusterId, { roleName });
   reloadClusterRuntime();
   return result;
 }
 
 export async function updateClusterRoleAction(roleId, updates) {
-  await requireAuth();
+  await requireRoleOwner(roleId);
   updateClusterRole(roleId, updates);
   if (updates.triggerConfig !== undefined) reloadClusterRuntime();
   return { success: true };
 }
 
 export async function deleteClusterRoleAction(roleId) {
-  await requireAuth();
+  await requireRoleOwner(roleId);
   dbDeleteRole(roleId);
   reloadClusterRuntime();
   return { success: true };
 }
 
 export async function triggerRoleManually(roleId) {
-  await requireAuth();
-  const role = getRoleWithCluster(roleId);
-  if (!role) return { error: 'Role not found' };
+  const { role } = await requireRoleOwner(roleId);
   return acquireAndRunRole(role, null, { type: 'manual' });
 }
 
 export async function stopRoleContainersAction(roleId) {
-  await requireAuth();
-  const role = getRoleWithCluster(roleId);
-  if (!role) return { error: 'Role not found' };
+  const { role } = await requireRoleOwner(roleId);
 
   const { clusterShortId, roleShortId } = await import('../db/clusters.js');
   const cid = clusterShortId(role.cluster);
