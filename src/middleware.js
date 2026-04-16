@@ -11,6 +11,92 @@ const { auth } = NextAuth(authConfig);
 // hint so middleware can decide without a DB read.
 const FIRST_SHOWN_COOKIE = 'gb_setup_seen';
 
+// Tiered rate limits for all /api/* routes. The in-process sliding-window
+// store (globalThis.__ghostbotRateLimit) is shared with lib/rate-limit.js
+// callers, so per-route handlers that call enforceRateLimit() independently
+// still stack correctly. Buckets are keyed by `${ip}:${prefix}` so an IP
+// burst on a cheap endpoint doesn't shut out the caller from expensive ones.
+const API_RATE_TIERS = [
+  // Expensive: LLM / agent / builder / webhook triggers.
+  { prefix: '/api/scanner/run',   limit: 10,  windowMs: 60_000 },
+  { prefix: '/api/builder',       limit: 20,  windowMs: 60_000 },
+  { prefix: '/api/webhook',       limit: 30,  windowMs: 60_000 },
+  { prefix: '/api/github/webhook',   limit: 60,  windowMs: 60_000 },
+  { prefix: '/api/telegram/webhook', limit: 120, windowMs: 60_000 },
+  { prefix: '/api/projects',      limit: 30,  windowMs: 60_000 },
+  { prefix: '/api/chat',          limit: 30,  windowMs: 60_000 },
+  // Admin reads — fine at a higher cap.
+  { prefix: '/api/monitoring',    limit: 120, windowMs: 60_000 },
+  { prefix: '/api/containers',    limit: 120, windowMs: 60_000 },
+  { prefix: '/api/notifications', limit: 120, windowMs: 60_000 },
+  // Default everything else /api/* gets a conservative cap.
+];
+const API_DEFAULT_LIMIT = 120;
+const API_DEFAULT_WINDOW_MS = 60_000;
+
+// NextAuth endpoints are left uncovered — they have their own CSRF /
+// brute-force protections and are called by the browser on every auth-state
+// check. Applying a cap here causes spurious 429s on login.
+const RATE_LIMIT_SKIP_PREFIXES = ['/api/auth/'];
+
+function getClientIpFromReq(req) {
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0].trim();
+  const real = req.headers.get('x-real-ip');
+  if (real) return real.trim();
+  const cf = req.headers.get('cf-connecting-ip');
+  if (cf) return cf.trim();
+  return 'unknown';
+}
+
+// Minimal in-middleware sliding-window check. Reuses the same globalThis
+// bucket store that lib/rate-limit.js uses so a user can't bypass the
+// cap by alternating between the middleware path and per-route calls.
+if (!globalThis.__ghostbotRateLimit) {
+  globalThis.__ghostbotRateLimit = { buckets: new Map(), lastSweep: 0 };
+}
+
+function applyApiRateLimit(req, pathname) {
+  if (RATE_LIMIT_SKIP_PREFIXES.some((p) => pathname.startsWith(p))) return null;
+
+  const tier = API_RATE_TIERS.find((t) => pathname.startsWith(t.prefix));
+  const limit = tier?.limit ?? API_DEFAULT_LIMIT;
+  const windowMs = tier?.windowMs ?? API_DEFAULT_WINDOW_MS;
+  const bucketPrefix = tier?.prefix ?? '/api/_default';
+
+  const ip = getClientIpFromReq(req);
+  const key = `${ip}:${bucketPrefix}`;
+  const now = Date.now();
+  const store = globalThis.__ghostbotRateLimit;
+
+  const cutoff = now - windowMs;
+  let list = store.buckets.get(key);
+  if (!list) {
+    list = [];
+    store.buckets.set(key, list);
+  }
+  while (list.length > 0 && list[0] < cutoff) list.shift();
+
+  if (list.length >= limit) {
+    const oldest = list[0];
+    const retryAfterSec = Math.max(1, Math.ceil((oldest + windowMs - now) / 1000));
+    return new NextResponse(
+      JSON.stringify({ error: 'Too many requests', retryAfterSec }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfterSec),
+          'X-RateLimit-Limit': String(limit),
+          'X-RateLimit-Remaining': '0',
+        },
+      },
+    );
+  }
+  list.push(now);
+  return null;
+}
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
@@ -23,6 +109,14 @@ export default auth(async (req) => {
   // the public landing page.
   if (/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff|woff2|ttf|eot)$/i.test(pathname)) {
     return;
+  }
+
+  // Tiered rate limiting on every /api/* route. Applied before the
+  // public-route pass-through so it protects unauthenticated endpoints
+  // (webhook receivers) and logged-in endpoints alike.
+  if (pathname.startsWith('/api/')) {
+    const limited = applyApiRateLimit(req, pathname);
+    if (limited) return limited;
   }
 
   // Public routes
