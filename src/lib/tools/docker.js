@@ -9,6 +9,55 @@ import { PROJECT_ROOT } from '../paths.js';
 const workspacesDir = path.join(PROJECT_ROOT, 'data/workspaces');
 const CODING_AGENT_UID = 1001;
 
+// Docker daemon endpoint. Prefer a restricted docker-socket-proxy for
+// defense in depth — the raw docker.sock grants host-root-equivalent
+// privilege. Set DOCKER_HOST=tcp://docker-proxy:2375 in the env (or
+// docker-compose) to route all Docker API calls through the proxy.
+//
+// If DOCKER_HOST is unset, we fall back to the Unix socket at
+// /var/run/docker.sock — backward-compatible with existing deploys.
+//
+// Parsed once at module load. If you change DOCKER_HOST at runtime
+// you'll need to restart the process.
+function parseDockerEndpoint() {
+  const raw = process.env.DOCKER_HOST || '';
+  if (!raw || raw.startsWith('unix://')) {
+    const socketPath = raw
+      ? raw.replace(/^unix:\/\//, '')
+      : '/var/run/docker.sock';
+    return { kind: 'unix', socketPath };
+  }
+  if (raw.startsWith('tcp://')) {
+    const m = raw.match(/^tcp:\/\/([^:/]+)(?::(\d+))?/);
+    if (m) {
+      return { kind: 'tcp', host: m[1], port: m[2] ? Number(m[2]) : 2375 };
+    }
+  }
+  // Unknown format — fail safe back to the Unix socket rather than
+  // silently allowing an unintended TCP endpoint.
+  console.warn(`[docker] Unrecognised DOCKER_HOST=${raw}, falling back to /var/run/docker.sock`);
+  return { kind: 'unix', socketPath: '/var/run/docker.sock' };
+}
+
+export const DOCKER_ENDPOINT = parseDockerEndpoint();
+
+function dockerRequestOptions(path, method, extraHeaders = {}) {
+  const opts = {
+    path,
+    method,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+  };
+  if (DOCKER_ENDPOINT.kind === 'tcp') {
+    opts.host = DOCKER_ENDPOINT.host;
+    opts.port = DOCKER_ENDPOINT.port;
+  } else {
+    opts.socketPath = DOCKER_ENDPOINT.socketPath;
+  }
+  return opts;
+}
+
+export { dockerRequestOptions };
+
 // ─── Agent container resource limits (Phase 3.2) ───
 // A misbehaving or hostile agent must not be able to exhaust the host.
 // Values can be overridden per install via env or admin-settable config.
@@ -78,12 +127,7 @@ export class DockerFrameParser {
 
 export function dockerApi(method, apiPath, body = null) {
   return new Promise((resolve, reject) => {
-    const req = http.request({
-      socketPath: '/var/run/docker.sock',
-      path: apiPath,
-      method,
-      headers: { 'Content-Type': 'application/json' },
-    }, (res) => {
+    const req = http.request(dockerRequestOptions(apiPath, method), (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
@@ -103,9 +147,8 @@ export function dockerApi(method, apiPath, body = null) {
 export function dockerApiStream(method, apiPath) {
   return new Promise((resolve, reject) => {
     const req = http.request({
-      socketPath: '/var/run/docker.sock',
-      path: apiPath,
-      method,
+      ...dockerRequestOptions(apiPath, method),
+      headers: undefined, // streaming endpoint — no Content-Type
     }, resolve);
     req.on('error', reject);
     req.end();
@@ -464,16 +507,14 @@ export async function execInContainer(containerName, cmd, timeoutMs = 5000) {
 
     const buf = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
-      const req = http.request({
-        socketPath: '/var/run/docker.sock',
-        path: `/exec/${execId}/start`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }, (res) => {
-        const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => { clearTimeout(timer); resolve(Buffer.concat(chunks)); });
-      });
+      const req = http.request(
+        dockerRequestOptions(`/exec/${execId}/start`, 'POST'),
+        (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => { clearTimeout(timer); resolve(Buffer.concat(chunks)); });
+        },
+      );
       req.on('error', (e) => { clearTimeout(timer); reject(e); });
       req.write(JSON.stringify({ Detach: false, Tty: false }));
       req.end();

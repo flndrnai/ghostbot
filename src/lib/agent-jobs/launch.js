@@ -10,7 +10,7 @@ import http from 'http';
 import path from 'path';
 import { getConfig } from '../config.js';
 import { getConfigSecret } from '../db/config.js';
-import { dockerApi, DockerFrameParser, resolveHostPath, getAgentContainerLimits, getAgentTimeoutMs } from '../tools/docker.js';
+import { dockerApi, DockerFrameParser, resolveHostPath, getAgentContainerLimits, getAgentTimeoutMs, dockerRequestOptions } from '../tools/docker.js';
 import { getChatById } from '../db/chats.js';
 import { getProjectById, resolveProjectPath } from '../db/projects.js';
 import {
@@ -218,14 +218,14 @@ async function runJobContainer({ jobId, containerName, image, env, hostProjectPa
     return;
   }
 
-  // Stream logs via the Docker socket (HTTP long-poll follow=1)
+  // Stream logs via the Docker socket (or the docker-socket-proxy if
+  // DOCKER_HOST is configured). HTTP long-poll follow=1.
   await new Promise((resolve) => {
     const req = http.request(
-      {
-        socketPath: '/var/run/docker.sock',
-        path: `/containers/${containerId}/logs?follow=1&stdout=1&stderr=1`,
-        method: 'GET',
-      },
+      dockerRequestOptions(
+        `/containers/${containerId}/logs?follow=1&stdout=1&stderr=1`,
+        'GET',
+      ),
       (res) => {
         const parser = new DockerFrameParser();
         res.on('data', (buf) => {
