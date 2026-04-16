@@ -1,0 +1,81 @@
+{
+  "setup": {
+    "page": {
+      "title": "Set up GhostBot",
+      "subtitle": "A few minutes to get chat, agents, and notifications ready."
+    },
+    "banner": {
+      "title": "Finish your GhostBot setup",
+      "progress": "{done} of {total} configured",
+      "resume": "Resume",
+      "dismiss": "Dismiss"
+    },
+    "llm": {
+      "title": "Choose your LLM provider",
+      "subtitle": "GhostBot needs this to chat. You can change it later.",
+      "provider": "Provider",
+      "baseUrl": "Base URL",
+      "apiKey": "API key",
+      "model": "Model (optional)",
+      "modelAutoPick": "Auto-pick first available",
+      "testAndSave": "Test & Save",
+      "retest": "Re-test",
+      "disconnect": "Disconnect & edit",
+      "activeTitle": "{provider} connected",
+      "alreadyConfigured": "Already configured ✓",
+      "errorConnect": "Couldn't connect. Check URL/key and try again.",
+      "errorNoModels": "Connected, but no models found."
+    },
+    "docker": {
+      "title": "Docker check",
+      "subtitle": "Needed for coding agents. Optional.",
+      "checking": "Checking Docker socket…",
+      "connected": "Docker connected",
+      "socketPath": "Socket",
+      "version": "Engine version",
+      "imagesFound": "{count} agent image(s) available",
+      "noImages": "Socket reachable but no ghostbot coding-agent images found",
+      "pullDefault": "Pull default (Aider) image",
+      "pullInProgress": "Pulling — this can take a few minutes…",
+      "socketMissing": "Docker socket not mounted",
+      "socketMissingHelp": "Coding agents won't work until this is fixed. See the setup docs.",
+      "recheck": "Re-check",
+      "skip": "Skip — I'll set this up later",
+      "skipped": "Skipped — agents disabled. Re-run wizard to configure."
+    },
+    "github": {
+      "title": "GitHub PAT (optional)",
+      "subtitle": "Required only if you want agents to push branches and open PRs.",
+      "pat": "Fine-grained personal access token",
+      "scopesHint": "Scopes needed: repo, read:user, workflow",
+      "patLink": "Create a GitHub PAT →",
+      "testAndSave": "Test & Save",
+      "skip": "Skip",
+      "activeTitle": "Connected as @{username}",
+      "scopes": "Scopes",
+      "errorConnect": "GitHub rejected the token. Check scopes and try again."
+    },
+    "notifications": {
+      "title": "Notifications (optional)",
+      "subtitle": "Send job status alerts to Telegram or Slack.",
+      "telegramTitle": "Telegram",
+      "telegramBotToken": "Bot token",
+      "telegramChatId": "Chat ID",
+      "slackTitle": "Slack",
+      "slackWebhook": "Webhook URL",
+      "sendTest": "Send test message",
+      "sent": "Test message sent ✓",
+      "testFailed": "Test failed: {error}",
+      "telegramActive": "Telegram active",
+      "slackActive": "Slack active",
+      "disconnect": "Disconnect"
+    },
+    "done": {
+      "title": "You're set up",
+      "subtitle": "Summary of what's configured.",
+      "start": "Start using GhostBot →",
+      "backToAdmin": "Back to admin",
+      "confirmPartial": "Some features are disabled. You can re-run setup from Admin → Setup at any time. Finish anyway?"
+    }
+  }
+}
