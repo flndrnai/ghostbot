@@ -31,8 +31,11 @@ export function loadTriggers() {
   }
 }
 
-export function fireTriggers(watchPath, context = {}) {
-  const triggers = triggerMap.get(watchPath);
+export function getTriggersForPath(watchPath) {
+  return triggerMap.get(watchPath) || [];
+}
+
+export function executeTriggerActions(triggers, context = {}) {
   if (!triggers || triggers.length === 0) return;
 
   for (const trigger of triggers) {
@@ -49,6 +52,10 @@ export function fireTriggers(watchPath, context = {}) {
       });
     }
   }
+}
+
+export function fireTriggers(watchPath, context = {}) {
+  executeTriggerActions(triggerMap.get(watchPath), context);
 }
 
 export function getTriggerPaths() {
