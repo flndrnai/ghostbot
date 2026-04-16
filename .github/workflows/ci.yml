@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test + build check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build check
+        # Runs next build to catch compile errors the test suite can't
+        # hit (JSX/TSX syntax, server/client boundary mistakes, bad
+        # imports). AUTH_SECRET required by the auth config at build time.
+        env:
+          AUTH_SECRET: ci-dummy-secret-not-used-at-runtime
+          AUTH_TRUST_HOST: "true"
+          NODE_ENV: production
+        run: npm run build
