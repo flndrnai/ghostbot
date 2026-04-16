@@ -1,0 +1,26 @@
+{
+  "name": "GhostBot",
+  "short_name": "GhostBot",
+  "description": "Self-hosted AI coding agent platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050509",
+  "theme_color": "#D4AF37",
+  "icons": [
+    {
+      "src": "/ghostbot-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["developer", "productivity"]
+}
