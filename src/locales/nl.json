@@ -38,7 +38,7 @@
       "howToBuild": "How to build agent images",
       "buildInstructions": "Agent images are built locally. Run ./docker/build.sh from the repo root.",
       "socketMissing": "Docker socket not mounted",
-      "socketMissingHelp": "Coding agents won't work until this is fixed. See the setup docs.",
+      "socketMissingHelp": "Coding agents won't work until this is fixed. See /docs#docker-mount for the compose setup.",
       "recheck": "Re-check",
       "skip": "Skip — I'll set this up later",
       "skipped": "Skipped — agents disabled. Re-run wizard to configure."

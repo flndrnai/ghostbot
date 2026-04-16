@@ -385,7 +385,63 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="containers" title="9. Containers">
+            <Section id="docker-mount" title="9. Docker mount &amp; security">
+              <Block label="What it is">
+                How GhostBot talks to your host&apos;s Docker daemon to launch coding-agent
+                containers — and how it&apos;s sandboxed so the app can&apos;t escape to host root.
+              </Block>
+              <Block label="The short version">
+                In the default <code>docker-compose.yml</code>, GhostBot does NOT mount the raw
+                <code>/var/run/docker.sock</code>. Instead, a sidecar service called
+                <code>docker-proxy</code> (the <code>tecnativa/docker-socket-proxy</code> image)
+                mounts the socket read-only, exposes a restricted subset of the Docker API on
+                <code>tcp://docker-proxy:2375</code>, and GhostBot connects to it via
+                <code>DOCKER_HOST=tcp://docker-proxy:2375</code>.
+              </Block>
+              <Block label="Why it matters">
+                Mounting <code>/var/run/docker.sock</code> directly into a container is
+                equivalent to giving that container root on the host. If you ever expose
+                GhostBot to untrusted users (or a bug lets a <code>user</code>-role account
+                reach the launcher), the proxy limits the blast radius to "start/stop/inspect
+                agent containers" instead of "full host compromise".
+              </Block>
+              <Block label="Allowlist the proxy exposes">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><code>CONTAINERS</code> — list / create / inspect / logs / wait / kill / remove</li>
+                  <li><code>IMAGES</code> — inspect (the launcher checks for the agent image before starting)</li>
+                  <li><code>NETWORKS</code> — resolve the compose network to attach agent containers</li>
+                  <li><code>EXEC</code> — container exec (used by <code>execInContainer</code>)</li>
+                  <li><code>POST</code> + <code>DELETE</code> — HTTP verbs for all of the above</li>
+                  <li>Everything else — explicitly <code>0</code>: AUTH, BUILD, COMMIT, CONFIGS, DISTRIBUTION, EVENTS, INFO, NODES, PLUGINS, SECRETS, SERVICES, SESSION, SWARM, SYSTEM, TASKS, VOLUMES</li>
+                </ul>
+              </Block>
+              <Block label="If you&apos;re migrating from an older compose">
+                Earlier GhostBot deploys bind-mounted <code>/var/run/docker.sock</code>
+                directly into the app container. After pulling the latest
+                <code>docker-compose.yml</code> and running <code>docker compose up -d</code>,
+                the bind is replaced by the proxy service. Verify by opening
+                <strong>Admin → Containers</strong> — the list should populate exactly as
+                before. If it doesn&apos;t, check that the <code>docker-proxy</code> service is
+                running (<code>docker compose ps</code>) and that <code>DOCKER_HOST</code> is
+                set in the ghostbot service.
+              </Block>
+              <Block label="Opt out (not recommended)">
+                If you really want the old behaviour — direct socket bind — edit
+                <code>docker-compose.yml</code> to remove the <code>docker-proxy</code>
+                service, restore the <code>/var/run/docker.sock</code> bind on the
+                <code>ghostbot</code> service, and unset <code>DOCKER_HOST</code>. You&apos;re
+                opting into "admin of GhostBot = root on the host" as a threat model.
+              </Block>
+              <Block label="Agent resource limits">
+                Every agent container is launched with: Memory 2 GB, 1 CPU, PidsLimit 256,
+                <code>no-new-privileges</code>, and a 15-minute wall-clock timeout. Adjust
+                via <code>AGENT_MEMORY_LIMIT_MB</code>, <code>AGENT_CPU_LIMIT</code>,
+                <code>AGENT_PIDS_LIMIT</code>, <code>AGENT_TIMEOUT_SEC</code> in your env or
+                the admin settings.
+              </Block>
+            </Section>
+
+            <Section id="containers" title="10. Containers">
               <Block label="What it is">
                 A live view into the Docker containers GhostBot has running.
               </Block>
@@ -394,7 +450,7 @@ export function DocsContent() {
                   <li>Lists active <code>ghostbot:coding-agent-*</code> containers</li>
                   <li>Shows status, uptime, image, command</li>
                   <li>Lets you stop or remove stale containers</li>
-                  <li>Talks to Docker via the Unix socket (no CLI spawning)</li>
+                  <li>Talks to Docker via the proxy sidecar (see <a href="#docker-mount" className="underline">Docker mount &amp; security</a>), never the raw CLI</li>
                 </ul>
               </Block>
               <Block label="Why you need it">
@@ -402,10 +458,8 @@ export function DocsContent() {
                 exiting cleanly, this is where you check.
               </Block>
               <Block label="How to use">
-                Read-only inspection plus a kill switch. Requires <code>/var/run/docker.sock</code>
-                to be mounted into the GhostBot container — currently not enabled in the
-                Dokploy production deploy. We&apos;ll wire that when we start running real agent
-                jobs.
+                Read-only inspection plus a kill switch. Requires the <code>docker-proxy</code>
+                sidecar to be running (it ships in the default <code>docker-compose.yml</code>).
               </Block>
             </Section>
 
