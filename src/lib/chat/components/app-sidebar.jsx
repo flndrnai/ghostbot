@@ -23,7 +23,6 @@ import {
 } from './ui/sidebar.jsx';
 import { SidebarUserNav } from './sidebar-user-nav.jsx';
 import { SidebarHistory } from './sidebar-history.jsx';
-import { ThemeToggle } from './theme-toggle.jsx';
 import { APP_VERSION } from '../../version.js';
 
 export function AppSidebar({ session }) {
@@ -157,7 +156,6 @@ export function AppSidebar({ session }) {
         </SidebarMenu>
         {open && (
           <>
-            <ThemeToggle />
             <div className="mt-1 text-center text-[10px] text-muted-foreground/60">
               Version <span className="font-mono text-foreground/70">{APP_VERSION}</span>
             </div>
