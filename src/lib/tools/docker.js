@@ -434,3 +434,27 @@ export async function execInContainer(containerName, cmd, timeoutMs = 5000) {
     return null;
   }
 }
+
+// ─── Wizard helper ───
+// Returns { ok, version, agentImages[] } on success, { ok:false, error } on failure.
+// Used by the setup wizard Step 2 — lightweight check that the Docker socket
+// is reachable AND lists any ghostbot:coding-agent-* images present.
+export async function pingDocker() {
+  try {
+    const { status, data } = await dockerApi('GET', '/version');
+    if (status !== 200) return { ok: false, error: `Docker /version returned ${status}` };
+
+    const version = data.Version || 'unknown';
+
+    const imagesRes = await dockerApi('GET', '/images/json');
+    const agentImages = imagesRes.status === 200
+      ? (imagesRes.data || [])
+          .flatMap((img) => img.RepoTags || [])
+          .filter((tag) => tag && tag.startsWith('ghostbot:coding-agent-'))
+      : [];
+
+    return { ok: true, version, agentImages };
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
+  }
+}
