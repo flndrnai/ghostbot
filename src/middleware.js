@@ -16,6 +16,15 @@ export default auth(async (req) => {
   const isLoggedIn = !!req.auth;
   const user = req.auth?.user;
 
+  // Static assets served out of /public must never be auth-gated.
+  // Without this the matcher would only skip _next/favicon.ico/assets,
+  // so requests like /ghostbot-icon.svg fell into the auth branch and
+  // were 307-redirected to /login — breaking every logo/image load on
+  // the public landing page.
+  if (/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff|woff2|ttf|eot)$/i.test(pathname)) {
+    return;
+  }
+
   // Public routes
   if (
     pathname.startsWith('/api/') ||
