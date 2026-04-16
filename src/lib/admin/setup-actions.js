@@ -108,15 +108,15 @@ export async function checkDocker() {
   }
 }
 
-// GhostBot coding-agent images are built locally (see src/containers/agents/).
+// GhostBot coding-agent images are built locally (see docker/build.sh).
 // They are NOT on a public registry, so we can't docker-pull them. Instead,
 // surface the build instructions so the owner knows how to create them.
 export async function getAgentImageBuildInstructions() {
   await requireOwner();
   return {
     ok: true,
-    message: 'Agent images are built locally. See the build script under src/containers/agents/.',
-    commands: ['cd src/containers/agents', './build.sh'],
+    message: 'Agent images are built locally. Run ./docker/build.sh from the repo root.',
+    commands: ['./docker/build.sh'],
   };
 }
 

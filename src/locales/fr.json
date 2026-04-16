@@ -36,7 +36,7 @@
       "imagesFound": "{count} agent image(s) available",
       "noImages": "Socket reachable but no ghostbot coding-agent images found",
       "howToBuild": "How to build agent images",
-      "buildInstructions": "Agent images are built locally. Run ./build.sh in src/containers/agents.",
+      "buildInstructions": "Agent images are built locally. Run ./docker/build.sh from the repo root.",
       "socketMissing": "Docker socket not mounted",
       "socketMissingHelp": "Coding agents won't work until this is fixed. See the setup docs.",
       "recheck": "Re-check",
