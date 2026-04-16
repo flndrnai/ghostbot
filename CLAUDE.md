@@ -356,9 +356,14 @@ Add a dedicated section in `/docs` and in the admin UI for Dokploy/Docker produc
 
 Enforce `Memory: 2GB`, `NanoCpus: 1 CPU`, `PidsLimit: 256` when launching agent containers. Make configurable per agent type. Add timeout (default 15 min).
 
-#### 3.3 Monitoring & Logging Improvements
+#### 3.3 Monitoring & Logging Improvements — SHIPPED
 
-Live agent job log streaming, token usage dashboard, active container list, memory store stats.
+- ✅ Live agent job log streaming (SSE-driven, renders inside chat job cards)
+- ✅ Token usage dashboard (`/admin/monitoring` — summary cards + by-provider breakdown + 30-day daily stats + job stats)
+- ✅ Active container list (`/admin/containers`)
+- ✅ Memory store stats (`/admin/memory` — entry count, source filter, semantic search, JSON export)
+
+All four items existed before Phase 3 formalised them. Closing out Phase 3.3.
 
 #### 3.4 PWA Support
 
