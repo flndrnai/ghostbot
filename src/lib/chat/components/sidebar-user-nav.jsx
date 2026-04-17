@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { LogOut, Moon, Sun, BookOpen, User, ChevronsUpDown } from '../../icons/index.jsx';
+import { Compass } from 'lucide-react';
 import { useSidebar, SidebarMenuButton } from './ui/sidebar.jsx';
 import {
   DropdownMenu,
@@ -116,6 +117,10 @@ export function SidebarUserNav({ session }) {
           <DropdownMenuItem onClick={() => { window.location.href = '/docs'; }}>
             <BookOpen className="h-4 w-4" />
             Docs
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { window.location.href = '/getting-started'; }}>
+            <Compass className="h-4 w-4" />
+            Getting Started
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => { window.location.href = '/profile'; }}>
             <User className="h-4 w-4" />
