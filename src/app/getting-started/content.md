@@ -1,11 +1,3 @@
-<!--
-  MIRROR — the canonical source lives at src/app/getting-started/content.md
-  so it's included in the Docker build context and served by the in-app
-  /getting-started route. This file is a byte-identical copy kept here so
-  GitHub visitors can read the guide without running the app. When editing,
-  update BOTH files (or run: cp src/app/getting-started/content.md docs/GETTING_STARTED.md).
--->
-
 # Getting Started with GhostBot
 
 Welcome. GhostBot is your own private AI assistant that lives on your server — a mix of a smart chat helper and a programming sidekick that can actually make changes to your projects. This guide is for **regular users** who just want to use it, not for people setting it up.
