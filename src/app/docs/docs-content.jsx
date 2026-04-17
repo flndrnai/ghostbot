@@ -109,45 +109,49 @@ export function DocsContent() {
 
             <Section id="getting-started" title="Getting started — your first 10 minutes">
               <p className="text-sm">
-                The setup wizard at <code>/setup</code> walks the owner through the essentials on first
-                login. This section is for after the wizard — what to do with the app now that it works.
+                Just finished the setup wizard? Here&apos;s what to do next. For the full plain-language
+                guide (what GhostBot is, what to do and NOT do), open the{' '}
+                <a href="/getting-started" className="underline text-primary">Getting Started page</a>{' '}
+                from the user menu.
               </p>
 
-              <Block label="1. Open your first chat">
-                After completing the wizard you land on <code>/</code> (or your most recent chat).
-                Type anything — <em>"what can you do?"</em> is a fair first question. The reply streams
-                token-by-token over SSE; code blocks come with copy buttons.
+              <Block label="1. Type something in the chat">
+                You&apos;re on the chat screen. Type a question in plain English. The AI replies live.
+                Every chat gets saved automatically — old ones show up in the left sidebar.
               </Block>
 
-              <Block label="2. Paste a screenshot if your model supports vision">
-                With a vision-capable LLM (Ollama multimodal, Claude Sonnet, GPT-4o, Gemini), paste an
-                image from your clipboard. GhostBot auto-resizes to ≈1 MB and sends it alongside the
-                text. Great for "what's wrong with this UI?" or "what does this diagram mean?"
+              <Block label="2. Paste a screenshot if you want">
+                If the AI you picked supports images (most modern ones do), you can paste a screenshot
+                straight into the chat. Great for <em>&quot;what does this error mean?&quot;</em> or{' '}
+                <em>&quot;read this receipt&quot;</em>.
               </Block>
 
-              <Block label="3. Connect a project">
-                Go to <strong>Projects</strong> (sidebar) → <em>Add project</em>. Either upload a folder,
-                paste a git URL to clone, or point at an existing path on the server. Every project has
-                a <code>CLAUDE.md</code> that gets auto-injected into the system prompt when that
-                project is attached to a chat. Think of it as the project's "permanent context".
+              <Block label="3. Dictate instead of typing">
+                Click the microphone button in the chat input, speak, click again to stop. Your words
+                land as text. Works on Chrome, Edge, Safari (not Firefox).
               </Block>
 
-              <Block label="4. Fire your first agent job">
-                In any chat with a project attached, click the wrench icon. Write a prompt like
-                <em>"Add a README section explaining the setup wizard"</em>, pick Aider (default),
-                click Launch. A live job card appears in the chat. You can watch the container logs
-                stream, see the PR URL when it pushes, and click View Diff to inspect changes inline.
+              <Block label="4. Attach a project so GhostBot knows your stuff">
+                Open <strong>Projects</strong> in the sidebar → <em>Add project</em>. Upload a folder,
+                paste a link to something online, or point at a folder already on the server. Each
+                project has a notes file (<code>CLAUDE.md</code>) that tells the AI what the project is
+                about — fill it in once, the AI uses it automatically.
               </Block>
 
-              <Block label="5. Set up notifications (optional)">
-                If you want to know when agent jobs finish without staring at the UI, wire up
-                Telegram or Slack under Admin. You'll get a ping the moment the job succeeds or fails.
+              <Block label="5. Ask an AI helper to do a task">
+                Click the wrench icon in the chat input, write what you want done in plain English
+                (<em>&quot;add a Contact Us button&quot;</em>), click Launch. A progress card appears in
+                the chat. When it finishes you can review what was changed side-by-side before keeping it.
               </Block>
 
-              <Block label="When things go sideways">
-                Jump to the <a href="#troubleshooting" className="underline">Troubleshooting</a> section.
-                It covers the top-5 papercuts: LLM errors, agent jobs that won't launch, GitHub PAT
-                scope problems, Telegram delivery issues, memory / embedding failures.
+              <Block label="6. Optional — get notified on your phone">
+                Under Admin, set up Telegram or Slack. You&apos;ll get a ping when an AI helper finishes
+                a task, so you don&apos;t have to watch the screen.
+              </Block>
+
+              <Block label="Stuck on something?">
+                Jump to the <a href="#troubleshooting" className="underline">Troubleshooting</a> section
+                further down. It covers the most common issues and their fixes in plain language.
               </Block>
             </Section>
 

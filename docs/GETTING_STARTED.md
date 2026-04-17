@@ -1,168 +1,180 @@
 # Getting Started with GhostBot
 
-Welcome. GhostBot is your personal AI coding workshop, running on your own server. This guide walks you through the mental model, the first 15 minutes after installation, what you can actually do with it day-to-day, and — honestly — what it's not built for.
+Welcome. GhostBot is your own private AI assistant that lives on your server — a mix of a smart chat helper and a programming sidekick that can actually make changes to your projects. This guide is for **regular users** who just want to use it, not for people setting it up.
 
-If you haven't installed GhostBot yet, start with the [README](../README.md) for Docker Compose + Dokploy quick-start. If you want to kick the tires first, try the live demo at **[demo.ghostbot.dev](https://demo.ghostbot.dev)** — agent jobs and secret saves are disabled, but everything else is real.
-
----
-
-## 1. What GhostBot actually is
-
-Think of it as three things glued together by one Next.js app:
-
-1. **A chat interface** against any LLM — cloud (Anthropic, OpenAI, Google) or a self-hosted Ollama model on your own VPS.
-2. **A coding-agent launcher** — you write "fix the thing" in chat, GhostBot spins up a Docker container, clones your repo, runs a real coding agent (Aider, OpenCode, Codex, or Gemini CLI), commits the fix, and opens a PR. You get a Telegram/Slack ping when it's done.
-3. **A memory system** — every chat is auto-summarised and embedded. When you start a new chat on a related topic, GhostBot retrieves the relevant past context automatically. It's a searchable, self-organising notebook that stays with you across sessions.
-
-Everything runs on your server. SQLite + WAL mode, no external services unless you invite them (a cloud LLM API, a GitHub PAT, Telegram/Slack). Secrets are encrypted at rest with AES-256-GCM.
+Try it live — without signing up — at **[demo.ghostbot.dev](https://demo.ghostbot.dev)**. Some things are turned off for safety (it resets every day), but you can click around freely.
 
 ---
 
-## 2. Your first 15 minutes
+## 1. What is GhostBot, really?
 
-### Setup wizard (first login)
+Think of it like this:
 
-The first time you log in as the owner, GhostBot redirects you to `/setup` — a 5-step wizard that walks you through LLM, Docker, GitHub, and notifications in one flow. Each step tests its config live before moving on.
+- **A very smart friend** who can read, write, explain, and fix things — lives in a chat window on your phone or laptop.
+- **A helper that remembers** everything you've talked about. Next week, when you come back with a related question, it already knows the context.
+- **A worker** you can hand a task and walk away from — "tidy up this project file", "add a button to the login page", "check if the tests still pass" — then get a ping when it's done.
 
-- **LLM** is the only required step. Without it, chat doesn't work.
-- **Docker** is skippable if you only care about chat — you won't be able to launch coding agents until the socket proxy is wired up.
-- **GitHub** is skippable but unlocks `/ghostbot` PR comments and agent PRs.
-- **Notifications** (Telegram + Slack) are purely optional quality-of-life.
-
-The wizard is re-openable any time from the admin navigation if you want to reconfigure.
-
-### Open your first chat
-
-After finishing the wizard (or clicking "Start using GhostBot →" at the end), you land on `/` — a fresh chat. Type anything. Responses stream token-by-token over Server-Sent Events. Code blocks come with copy buttons.
-
-Try:
-- A regular question: "what's the difference between useMemo and useCallback?"
-- A multi-turn refinement: drill into something, then ask "okay now rewrite that for TypeScript with full generics"
-- Paste an image: if your LLM supports vision (Claude, GPT-4o, Gemini, or a multimodal Ollama model), GhostBot accepts clipboard images — great for "what's wrong with this UI screenshot?"
-
-### Connect a project
-
-Navigate to **Projects** in the sidebar → **+ Add project**. Three ways to start one:
-
-- **Upload** — drag a folder from your desktop
-- **Clone** — paste a git URL (validated against a strict allowlist; no shell injection possible)
-- **Connect existing** — point at a folder already on the server
-
-Each project gets a `CLAUDE.md` at its root. When you attach a project to a chat (folder icon in the chat input), that `CLAUDE.md` is auto-injected into the system prompt. Treat it as the project's permanent memory — tech stack, conventions, current state, known issues. The more you put in it, the better the LLM understands what it's working with.
-
-### Launch your first agent job
-
-In a chat with a project attached, click the wrench icon next to the mic. Write a prompt:
-
-> Add a README section explaining how to run tests.
-
-Pick Aider (the default — works with any LLM including small self-hosted ones). Click Launch. A live job card appears in the chat. You can watch the container logs stream, see the PR URL when it pushes, and click **View diff** to inspect the changes inline (side-by-side or unified toggle).
-
-Default resource limits per agent: 2 GB memory, 1 CPU, 256 PIDs, 15-minute wall-clock timeout.
-
-### Turn on notifications (optional)
-
-**Admin → Telegram** or **Admin → Slack**. Paste the relevant credentials, test the connection, save. You'll get pings when agent jobs succeed or fail — handy when you've fired a few and don't want to babysit the UI.
-
-### Voice input
-
-The chat input has a microphone button (bottom-left). Click it, speak, click again to stop. Final transcripts land in the textarea. Uses the browser's built-in SpeechRecognition API — no server round-trip, no transcription API cost. Works on Chrome, Edge, Safari (macOS + iOS). Hidden on browsers that don't support it (Firefox).
-
-### Install as a PWA
-
-On mobile Safari / Chrome / Edge: open GhostBot → share/menu → **Add to Home Screen**. It installs as a standalone app with the GhostBot icon, opens without the browser chrome. Offline shell cache keeps the frame loading on flaky networks; the chat itself still needs connectivity.
+Everything stays on your own server. Nothing you type goes anywhere you didn't set up yourself.
 
 ---
 
-## 3. What you can actually do with it
+## 2. Your first time — 10 minutes
 
-### Day-to-day use cases
+### Log in
 
-- **Ask coding questions with your own repo as context** — attach a project, ask anything. The LLM sees `CLAUDE.md` automatically; attach specific files if you want them in-context too.
-- **"Why is this broken?"** — paste a screenshot of a broken UI, or a stack trace, or terminal output. Vision-capable LLMs read screenshots. Non-vision LLMs still handle text pastes fine.
-- **"Implement X"** — agent jobs. Describe the change, pick the agent, hit launch. Works best on small focused changes (not "rewrite the whole auth system"). Typically 30 seconds to a few minutes per job.
-- **"Review this PR"** — cluster pipelines. Create a cluster from the **PR Reviewer** template, point it at any PR, get a reviewer/tester/summariser chain run automatically.
-- **"Summarise what I worked on this week"** — the AI Scanner runs daily and writes self-reflection insights into the knowledge base. Search them in **Admin → Memory**.
-- **"Something fell over overnight"** — if you've wired up Telegram/Slack, any agent job failure pings you immediately. No need to keep the tab open.
-- **Dictate commit messages / chat prompts** — mic button. Especially useful on mobile or while walking.
-- **Build something from a one-line goal** — the Autonomous Builder takes "build a Next.js blog with auth and comments", plans it as a sequence of agent jobs, runs them with retries and progress tracking, and writes the result into a new project.
-- **GitHub PR triggers** — comment `/ghostbot fix this bug` on any PR. The bot picks it up, makes the fix, pushes a commit. Great for when you spot something small from a phone.
+Click **Sign In**, enter your email + password. If this is a brand-new GhostBot, the very first person who signs up becomes the owner.
 
-### Cluster templates worth trying first
+### Walk through the setup guide
 
-- **PR Reviewer** — planner → reviewer → summariser. "What did this PR actually do and is it safe?"
-- **Docs Writer** — extractor → writer → editor. Regenerates README sections from code.
-- **Test Coverage Bot** — coverage analyser → test writer → test runner. Fills coverage gaps.
-- **Dependency Updater** — outdated scanner → updater → test runner. Patches-then-verifies.
+The first time you log in, GhostBot offers you a 5-step **Setup Wizard**. Don't skip it — it saves you from digging through menus later. You'll be asked about:
 
-One click to create a cluster from a template. Customise the prompts after if you want different behaviour.
+1. **Which AI to talk to** — your own (free, runs on your server) or a cloud one like ChatGPT or Claude (pay-as-you-go).
+2. **Whether bots can edit files** — yes/no/later; no doesn't lock you out, it just switches off the "go fix this" superpower.
+3. **Connecting to GitHub** — optional. Only needed if you want GhostBot to open pull requests for you.
+4. **Notifications** — optional. Get a Telegram or Slack ping when a task finishes.
+5. **Done** — click through, you're set.
 
-### Multi-user invites
+You can re-run the wizard any time from the menu if something changes.
 
-**Admin → Users → Invite**. Generates a one-time link. Each invited user gets their own chat history and memory — isolated at the DB layer. Use for small trusted teams. Do **not** use for public signups.
+### Start chatting
 
-### VS Code extension
+After the wizard you land on a fresh chat screen. Just type.
 
-Sideload the `.vsix` (see [vscode-extension/README.md](../vscode-extension/README.md)) or install from the Marketplace (once [published](../vscode-extension/PUBLISHING.md)). The extension mounts GhostBot in a sidebar panel inside VS Code. Highlight code → `⌘⇧↵` to send selection to chat. CodeLens "Ask GhostBot about this" appears above functions.
+- Ask anything: *"what's the difference between a .jpg and a .png?"*, *"write me a birthday text for my mum"*, *"explain cookies to a 5-year-old"*.
+- Paste a screenshot — click in the chat, press paste. If the AI you chose can see images (most modern ones can), it'll describe what's wrong or answer about it.
+- Click the **microphone** button and talk — it types for you. Works on most browsers, but not Firefox.
+
+The AI replies live, word by word. Every message is saved. Old chats appear in the left sidebar.
 
 ---
 
-## 4. What NOT to do / limits
+## 3. What you can actually do with GhostBot
 
-GhostBot is built for **small trusted deployments** — a personal VPS, a home server, a 5–10 person team. It is explicitly not built for everything. Honest list of limits:
+### Everyday chat
 
-### Don't use it for public multi-tenant hosting
+Just like ChatGPT or Claude, but **on your own server**, with **your own history**, and — if you set up a free one — **no monthly subscription**. Ask questions, brainstorm, write emails, plan a trip, rubber-duck a decision, summarise an article.
 
-GhostBot's threat model assumes admins are trusted. The docker-socket-proxy sandbox limits what the app can do on the host, but agent containers still get generous resource limits and a real LLM connection. A hostile admin (or an invited `user`-role account with a privilege-escalation bug) is outside the threat model. Don't hand admin to strangers.
+### "Remember this for next time"
 
-### Don't expose it without a real secret configuration
+Every conversation is auto-summarised in the background. A week later when you start a new chat on the same topic, GhostBot automatically reminds itself of the earlier context. You don't have to copy-paste anything.
 
-Every webhook receiver fails closed when its secret is unset (by design — that's a feature, not a bug). If you skip the GitHub webhook secret, `/ghostbot` PR triggers won't work; if you skip the Telegram secret, the Telegram bot won't accept updates. Fill them in before relying on any integration.
+### Paste a screenshot, ask about it
 
-### Don't expect horizontal scaling
+Clipboard → paste into the chat input. Great for:
+- *"What's wrong with this error message?"*
+- *"What does this menu do?"*
+- *"Tidy up this poster copy"*
+- *"Read me what this receipt says"*
 
-It's a single-server architecture. One SQLite file, one in-process SSE bus, one rate-limit store. Works beautifully for 10–20 concurrent users. Past that you need to migrate to Redis pub/sub + Postgres/Turso — documented in [SCALING.md](SCALING.md) but it's real work.
+### Hands-free dictation
 
-### Don't expect a small LLM to write production code
+Mic button (bottom-left in the chat). Speak, click again to stop. Good while you're walking, driving (passenger please), or just don't feel like typing.
 
-Agent output quality is entirely model-dependent. Qwen 2.5-coder 32B on a KVM8 gives you serious capability. `qwen2.5-coder:1.5b` (what the demo runs on) is fine for toy tasks but won't handle your production codebase. If coding agents feel dumb, the model is too small.
+### Attach a project so GhostBot knows your stuff
 
-### Don't trust cross-user content in system prompts
+On the **Projects** page (left sidebar) you can:
+- **Upload a folder** from your computer (drag-and-drop)
+- **Paste a link** to a project online (GhostBot will copy it for you)
+- **Point at something already on the server** if someone set that up
 
-Skill templates, cluster system prompts, and project `CLAUDE.md` files are persisted. In multi-user deployments, a user with write access to a shared resource can plant stored prompt-injection. Server-side ownership checks prevent the obvious cases (user B editing user A's skill) but anything a user legitimately owns is their problem — don't let invited users edit things the owner reads.
+Once a project is attached to a chat, GhostBot can read the files and understand what the project is about. You can click filenames in the side panel to share them with the AI.
 
-### Don't skip the hardening checklist before exposing beyond your perimeter
+### "Go fix this"
 
-See the [Security section of the README](../README.md#security) and [SECURITY.md](../SECURITY.md). Must-haves before public exposure: docker-socket-proxy in place (ships by default in compose), `ENCRYPTION_KEY` set (not just `AUTH_SECRET`), every webhook secret populated, `DOCKER_HOST` pointed at the proxy.
+If your setup includes the bot-worker feature, you'll see a **wrench icon** in the chat input. Click it, write what you want done in plain English:
 
-### Don't expect the demo to behave like production
+> Add a button that says "Contact Us" to the homepage.
 
-[demo.ghostbot.dev](https://demo.ghostbot.dev) has `DEMO_MODE=true`: agent jobs are disabled, secret saves silently no-op, DB resets every 24h. If you want to benchmark what your own self-host will feel like, you need to actually self-host.
+Pick which helper should do it (Aider is the default — works with all AIs), click **Launch**. A status card appears in the chat. You see the helper working live — it finds the right files, edits them, saves the changes. When it's done:
+- You get a link to review the exact changes (side-by-side, like a before/after)
+- If you're connected to GitHub, a pull request is created automatically
+- If you've set up notifications, your phone pings
+
+What kinds of tasks work well:
+- **Yes**: *"Add a dark mode button"*, *"Fix the typo on the About page"*, *"Write a README explaining how to run this"*.
+- **Not really**: *"Rebuild the whole app"*, *"Design me a logo"* (that's a different kind of AI), *"Hack this website"* (nope).
+
+Keep tasks small and specific — same as asking any human for help.
+
+### Build something from one sentence — the "Builder"
+
+Open **Builder** in the sidebar. Type a goal like *"Build me a personal blog with a contact form"*. GhostBot plans it out as a list of steps, then runs each step automatically, retrying if something fails. You watch the progress bar and end up with a working project folder.
+
+Best for: starting projects from scratch, trying out ideas, making demos.
+
+### Multi-step automations — the "Clusters"
+
+A **Cluster** is a team of AI helpers that work together. Examples you can create with one click from the templates page:
+
+- **PR Reviewer** — looks at a code change, checks it for problems, writes a summary
+- **Docs Writer** — reads a project, writes or updates the documentation
+- **Test Coverage Bot** — finds parts of a project that aren't being tested, writes tests
+
+You create one from a template, click Run, walk away, come back to a finished result.
+
+### Daily summary of what you've been doing
+
+GhostBot has a **Scanner** that runs once a day (usually around 6:30 AM). It looks at everything you did the previous day and writes a short reflection into your searchable memory. Useful for keeping a changelog without having to think about it.
+
+### Invite other people
+
+Admin → **Users** → **Invite**. You get a one-time link to share. Each person you invite has their own chats, their own memory, their own settings. Great for a small trusted team.
+
+### Use it in VS Code
+
+If you're a programmer who lives in VS Code, there's a **GhostBot extension** that puts the whole app inside your editor. Highlight some code, press a shortcut, it lands in the chat. You can install it from the Marketplace when we publish it there.
+
+### Install it on your phone like an app
+
+On your phone browser, open the menu → **Add to Home Screen**. You get a GhostBot icon on your phone with no browser bar around it, just like a real app.
 
 ---
 
-## 5. Where to go next
+## 4. What GhostBot is NOT good for
 
-After you're comfortable with the basics:
+Being honest about the limits saves frustration later.
 
-- **[README.md](../README.md)** — architecture diagram, tech stack, full feature list, security overview
-- **[SECURITY.md](../SECURITY.md)** — threat model, hardening checklist, disclosure policy
-- **[docs/SCALING.md](SCALING.md)** — single-server ceiling + horizontal-growth migration path
-- **[docs/OLLAMA_QWEN_SETUP.md](OLLAMA_QWEN_SETUP.md)** — Ollama VPS setup + KVM8 migration for Qwen 2.5-coder 32B
-- **[docs/DEMO.md](DEMO.md)** — how demo.ghostbot.dev is deployed (useful if you want your own sandboxed instance)
-- **In-app `/docs`** — per-admin-page reference once you're logged in
+### ❌ Don't use it as a public app where strangers sign up
 
-If you get stuck, the in-app `/docs` has a Troubleshooting section covering the top 8 papercuts (LLM errors, agent jobs that won't launch, PAT scope problems, Telegram delivery, memory/embedding failures, wizard redirect loops, static asset 404s, where to find Dokploy logs).
+GhostBot is built for **one owner and maybe a small team of people you trust**. If you want to run something that the general public can sign up for — a SaaS, a public service — GhostBot isn't the right base. People with admin access have a lot of power.
+
+### ❌ Don't expect magic from a tiny brain
+
+The quality of the AI depends entirely on which one you chose in the setup wizard. A big model (like Claude, GPT-4, or a big free one running on your server) gives smart answers. A tiny free model gives simple answers. If it feels dumb, the model is probably too small — you can change it in Admin → LLM Providers any time.
+
+### ❌ Don't expect it to write perfect code on its own
+
+The "go fix this" feature is a helper, not a replacement for a programmer. It does best with small, clear tasks. Big vague tasks give messy results. Always review the changes it makes before merging them into real work.
+
+### ❌ Don't trust everything it says
+
+Like any AI, GhostBot can confidently make things up. If it's giving you legal, medical, or financial advice — double-check with a real human professional.
+
+### ❌ Don't expect it to handle a thousand people at once
+
+It's built to comfortably serve one person or a small team. If you need to scale to lots of users, that's a different setup (technical stuff is documented elsewhere).
+
+### ❌ Don't leave secrets in chat
+
+Treat chat like a diary — useful and private — but don't paste your banking passwords, credit card numbers, or other high-value secrets. Even though they stay on your server, mistakes happen.
 
 ---
 
-## Quick tips from using it day-to-day
+## 5. Tips from using it every day
 
-- **Keep `CLAUDE.md` current** in every project. It's the single highest-leverage file. The Autonomous Builder auto-updates the "What's shipped" section — leverage that.
-- **Use skills for things you ask 5+ times a week.** `/rename-component`, `/add-test`, `/convert-to-typescript` — whatever your repeat prompts are, make them skills in **Admin → Skills**. Typed with `/` in chat, they expand with `{{input}}` substitution.
-- **Turn on per-chat memory opt-out** for chats you don't want saved (throwaway experiments, sensitive content). Chat settings gear → Memory toggle.
-- **One project per chat** — don't attach multiple projects to the same chat. Context gets confused.
-- **Small focused agent prompts beat big vague ones.** "Add a dark-mode toggle with the existing theme context" works. "Redesign the UI" doesn't.
-- **Keep the wizard link handy.** After you deploy you'll tweak LLM providers, add secrets, test connections. `/setup` (or Admin → Setup) re-opens it any time.
+- **Fill in your project's "notes file"** (called `CLAUDE.md`) with stuff about the project — what it is, how it's organised, what's special. The AI reads this automatically. The more you put in it, the better the answers.
+- **Make shortcuts for things you ask a lot.** Admin → **Skills** → create one like `/email-reply` with a prompt template. Then just type `/email-reply` in chat and fill in the blanks.
+- **Turn off memory for private chats.** In chat settings there's a memory toggle. Use it when you don't want the conversation saved.
+- **One project per chat.** Don't mix projects in one conversation — the AI gets confused.
+- **Small specific requests work best.** *"Make the button blue"* is clearer than *"improve the styling"*.
+- **If something goes wrong**, the **Docs** page (menu → Docs) has a Troubleshooting section with fixes for the most common issues.
 
-Good luck. If you hit something the docs don't cover, open an issue on [github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot).
+---
+
+## 6. Where to go from here
+
+- **Try the live demo** — [demo.ghostbot.dev](https://demo.ghostbot.dev) — no sign-up, no risk, get a feel for it
+- **Docs** (menu → Docs) — detailed explanation of every admin page
+- **GitHub** — [github.com/flndrnai/ghostbot](https://github.com/flndrnai/ghostbot) — if you hit a bug, open an issue
+
+Good luck, and have fun with it. GhostBot works best when you just start using it and see what it can do.
