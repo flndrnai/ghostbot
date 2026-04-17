@@ -25,7 +25,10 @@ const SECTIONS = [
   { id: 'agent-jobs', label: 'Agent Jobs (chat)' },
   { id: 'shortcuts', label: 'Keyboard shortcuts' },
   { id: 'attachments', label: 'File & image attachments' },
+  { id: 'voice-input', label: 'Voice-to-text' },
   { id: 'vscode', label: 'VS Code extension' },
+  { id: 'install-pwa', label: 'Install as an app' },
+  { id: 'demo-mode', label: 'Demo mode' },
   { id: 'setup-checklist', label: 'Setup order' },
   { id: 'project-connect-guide', label: 'Project Connect guide' },
   { id: 'clusters-guide', label: 'Clusters guide' },
@@ -716,7 +719,27 @@ export function DocsContent() {
               </Block>
             </Section>
 
-            <Section id="vscode" title="20. VS Code extension">
+            <Section id="voice-input" title="20. Voice-to-text (mic button)">
+              <Block label="What it is">
+                A microphone button in the chat input. Click it, speak, click again to stop. Your words land as text in the chat, ready to send.
+              </Block>
+              <Block label="How to use">
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Click the small microphone icon (bottom-left of the chat input)</li>
+                  <li>Grant your browser microphone permission the first time</li>
+                  <li>Speak naturally — interim results disappear, only final phrases are kept</li>
+                  <li>Click again to stop</li>
+                </ol>
+              </Block>
+              <Block label="What browsers support it">
+                Chrome, Edge, and Safari (macOS + iOS). Firefox doesn&apos;t have native speech recognition yet — the button hides itself automatically when the API isn&apos;t available.
+              </Block>
+              <Block label="Privacy">
+                Speech recognition runs entirely in your browser via the built-in Web Speech API. Audio never touches your server or a third-party transcription service. No cost, no audit trail beyond what the browser itself logs.
+              </Block>
+            </Section>
+
+            <Section id="vscode" title="21. VS Code extension">
               <Block label="What it is">
                 A VS Code extension that mounts your live GhostBot UI inside the editor as a sidebar panel. Same login session, same chat, same agents, same memory.
               </Block>
@@ -728,6 +751,45 @@ export function DocsContent() {
                   <li>In VS Code: <code>Cmd+Shift+P</code> → &quot;GhostBot: Open&quot;</li>
                   <li>Settings → search &quot;ghostbot&quot; to point at a different URL if needed</li>
                 </ol>
+              </Block>
+            </Section>
+
+            <Section id="install-pwa" title="22. Install GhostBot as an app (PWA)">
+              <Block label="What it is">
+                Progressive Web App support — GhostBot can be installed on your phone or desktop like a regular app, with its own icon and its own window (no browser chrome around it).
+              </Block>
+              <Block label="How to install on your phone">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><strong>iOS (Safari)</strong>: tap the Share button → &quot;Add to Home Screen&quot;</li>
+                  <li><strong>Android (Chrome)</strong>: tap the ⋮ menu → &quot;Install app&quot; or &quot;Add to Home screen&quot;</li>
+                </ul>
+              </Block>
+              <Block label="How to install on desktop">
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li><strong>Chrome / Edge</strong>: an install icon appears in the address bar — click it</li>
+                  <li><strong>Safari (macOS)</strong>: File menu → &quot;Add to Dock&quot;</li>
+                </ul>
+              </Block>
+              <Block label="What it does">
+                The GhostBot app opens without browser tabs around it — feels like a native app. A small service worker caches the shell so the frame loads even on a flaky connection. The actual chat still needs network (it&apos;s talking to your LLM in real time).
+              </Block>
+            </Section>
+
+            <Section id="demo-mode" title="23. Demo mode">
+              <Block label="What it is">
+                A safety flag for when you want to host a public &quot;try it&quot; version of GhostBot. With <code>DEMO_MODE=true</code> set in the environment:
+                <ul className="list-disc pl-5 space-y-1.5 mt-2">
+                  <li>Agent-job launches are blocked (no LLM cost burn, no Docker abuse)</li>
+                  <li>Secret saves silently no-op (visitor A&apos;s API key never persists for visitor B)</li>
+                  <li>A 🎭 Demo banner shows at the top of every page</li>
+                  <li>Everything else works normally — chat, memory, admin UI, setup wizard</li>
+                </ul>
+              </Block>
+              <Block label="Live example">
+                <a href="https://demo.ghostbot.dev" target="_blank" rel="noreferrer" className="underline text-primary">demo.ghostbot.dev</a> runs this config. Database resets every 24h via the bundled reset-cron sidecar. Co-resident with production ghostbot.dev on a single VPS, routed by hostname via Dokploy&apos;s Traefik.
+              </Block>
+              <Block label="How to deploy your own">
+                Full guide at <code>docs/DEMO.md</code> in the repo. Requires: a VPS with 8+ GB RAM, a subdomain pointing at it, Dokploy (or any compose-capable host), <code>DEMO_MODE=true</code> in the env.
               </Block>
             </Section>
 
@@ -866,6 +928,12 @@ export function DocsContent() {
             </Section>
 
             <Section id="troubleshooting" title="Troubleshooting — common issues">
+              <p className="text-sm text-muted-foreground">
+                Admin-oriented fixes. If you&apos;re a regular user seeing something weird, the plain-language{' '}
+                <a href="/getting-started" className="underline text-primary">Getting Started</a>{' '}
+                guide covers the basics first.
+              </p>
+
               <Block label='"No response streaming" / "LLM error"'>
                 Almost always an LLM connectivity issue:
                 <ul className="list-disc pl-5 space-y-1.5 mt-2">
@@ -924,6 +992,30 @@ export function DocsContent() {
                 Fixed in commit 89d08c2 — <code>src/proxy.js</code> now fast-paths requests with
                 static-file extensions past the auth check. If you see this on an older deploy,
                 pull main and rebuild.
+              </Block>
+
+              <Block label='"The microphone button doesn&apos;t show up / doesn&apos;t work"'>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>The button hides on browsers without native SpeechRecognition (Firefox, some Android webviews). Use Chrome, Edge, or Safari</li>
+                  <li>First click prompts for mic permission — if you denied by accident, re-enable via the address-bar site settings</li>
+                  <li>HTTPS is required; some browsers disable the API over plain HTTP (localhost exempted)</li>
+                </ul>
+              </Block>
+
+              <Block label='"Something says &quot;disabled in demo mode&quot;"'>
+                The instance has <code>DEMO_MODE=true</code> set. Agent launches and secret saves are intentionally blocked. Check the <code>🎭 Demo mode</code> banner at the top of the page. For the full experience, self-host without that env var.
+              </Block>
+
+              <Block label='"PWA install prompt never appears"'>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>Browser-side: only shows after a few repeat visits (~30s total engagement) and only over HTTPS</li>
+                  <li>Service worker only registers in production builds — dev servers intentionally skip it to avoid stale-cache confusion</li>
+                  <li>Hard refresh (<kbd>Cmd+Shift+R</kbd>) if you&apos;ve just deployed; the old service worker might be serving a stale manifest</li>
+                </ul>
+              </Block>
+
+              <Block label='"TLS cert stuck on TRAEFIK DEFAULT CERT"'>
+                Seen this on subdomain setups (e.g. demo.ghostbot.dev). Means Traefik is receiving traffic but has no router config for the host. Check: DNS resolves correctly, the Dokploy Domain config (or the dynamic file at <code>/etc/dokploy/traefik/dynamic/&lt;service&gt;.yml</code>) actually exists, and the Service Name inside points at the right container. See DEMO.md for the full pattern.
               </Block>
 
               <Block label="Where to dig further">
