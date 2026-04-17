@@ -4,41 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Greeting } from './greeting.jsx';
 import { ThinkingMessage } from './thinking-message.jsx';
 import { Markdown } from './markdown.jsx';
-
-function DiffView({ diff }) {
-  return (
-    <div className="mt-2 space-y-2">
-      <div className="text-[10px] text-muted-foreground">
-        {diff.totalCommits} commit(s) · {diff.files.length} file(s) changed
-      </div>
-      {diff.files.map((f) => (
-        <details key={f.filename} className="rounded-lg border border-border/60 bg-background/40">
-          <summary className="cursor-pointer px-3 py-2 text-xs flex items-center justify-between gap-2">
-            <span className="font-mono truncate">{f.filename}</span>
-            <span className="flex-shrink-0 flex items-center gap-2 text-[10px]">
-              <span className="text-primary">+{f.additions}</span>
-              <span className="text-destructive">-{f.deletions}</span>
-              <span className="text-muted-foreground uppercase">{f.status}</span>
-            </span>
-          </summary>
-          {f.patch ? (
-            <pre className="max-h-80 overflow-auto text-[11px] font-mono leading-relaxed px-3 py-2 border-t border-border/40">
-              {f.patch.split('\n').map((line, i) => {
-                const cls =
-                  line.startsWith('+') && !line.startsWith('+++') ? 'text-primary bg-primary/5' :
-                  line.startsWith('-') && !line.startsWith('---') ? 'text-destructive bg-destructive/5' :
-                  line.startsWith('@@') ? 'text-muted-foreground' : '';
-                return <div key={i} className={cls}>{line || '\u00A0'}</div>;
-              })}
-            </pre>
-          ) : (
-            <p className="px-3 py-2 text-[11px] text-muted-foreground border-t border-border/40">No patch available (binary or too large)</p>
-          )}
-        </details>
-      ))}
-    </div>
-  );
-}
+import { MonacoDiffView as DiffView } from './monaco-diff-view.jsx';
 
 function JobCard({ job }) {
   const [diff, setDiff] = useState(null);

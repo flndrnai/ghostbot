@@ -1,4 +1,20 @@
 @import "tailwindcss";
+@import "diff2html/bundles/css/diff2html.min.css";
+
+/* Tighten the diff2html output so it blends with the chat's dark surfaces.
+   Applied inside .gb-diff wrappers only — prevents these overrides from
+   leaking into any other rendered markdown. */
+.gb-diff .d2h-wrapper { background: transparent; font-size: 11px; }
+.gb-diff .d2h-file-header,
+.gb-diff .d2h-file-stats,
+.gb-diff .d2h-files-diff { display: none; }
+.gb-diff .d2h-code-wrapper { background: transparent; }
+.gb-diff .d2h-code-linenumber,
+.gb-diff .d2h-code-side-linenumber { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); color: var(--muted-foreground); }
+.gb-diff .d2h-code-line { color: var(--foreground); }
+.gb-diff .d2h-ins { background: rgba(16,185,129,0.10); }
+.gb-diff .d2h-del { background: rgba(239,68,68,0.10); }
+.gb-diff .d2h-info { background: rgba(212,175,55,0.08); color: var(--primary); }
 
 /* ─── Light Mode ─── */
 :root {
