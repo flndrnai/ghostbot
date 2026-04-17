@@ -4,34 +4,44 @@
 
 **Self-hosted AI coding agent platform** — chat with any LLM, run coding agents in Docker that open real GitHub PRs, and orchestrate multi-role agent pipelines. One Next.js app, SQLite, and your choice of cloud or local LLM.
 
-[![Live demo](https://img.shields.io/badge/live-ghostbot.dev-D4AF37?style=flat-square)](https://ghostbot.dev)
+[![Live site](https://img.shields.io/badge/live-ghostbot.dev-D4AF37?style=flat-square)](https://ghostbot.dev)
+[![Demo](https://img.shields.io/badge/try%20it-demo.ghostbot.dev-F5D97A?style=flat-square)](https://demo.ghostbot.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](#quick-start)
-[![Next.js 15](https://img.shields.io/badge/next.js-15-000?style=flat-square&logo=next.js)](https://nextjs.org)
 
 </div>
+
+> **Just want to try it?** [demo.ghostbot.dev](https://demo.ghostbot.dev) — no sign-up, no risk. Agent-job launches + secret saves are disabled, the database resets every 24h.
+>
+> **Just want to use it?** See **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** — the plain-language guide for people who aren't developers.
+>
+> **Want to self-host?** Read on.
 
 ---
 
 ## What it does
 
 - **Chat with any LLM** — Anthropic, OpenAI, Google, or your own self-hosted Ollama (Qwen 2.5 Coder, Llama, Mistral, etc.)
-- **First-run setup wizard** — `/setup` walks the owner through LLM, Docker, GitHub, and notification configuration in minutes
+- **First-run setup wizard** at `/setup` — walks the owner through LLM, Docker, GitHub, and notification configuration in minutes
 - **Real-time cross-device sync** — Laptop and phone stay in lock-step via Server-Sent Events
-- **Markdown chat** — Code blocks with copy buttons, tables, syntax highlighting, inline LaTeX-safe rendering
-- **Image paste + vision** — Clipboard screenshots are auto-resized and sent to vision-capable models
-- **Self-learning memory (RAG)** — Every chat is auto-summarized + embedded; future chats retrieve relevant past context
-- **Project Connect** — Attach a local project folder to any chat. Browse the tree, click to attach files, launch agents directly. `CLAUDE.md` is auto-injected into the system prompt
+- **Markdown chat** with code-block copy buttons, tables, syntax highlighting, LaTeX-safe rendering
+- **Image paste + vision** — Clipboard screenshots auto-resized and sent to vision-capable models
+- **Voice-to-text input** — Browser SpeechRecognition API, no transcription API cost, no server round-trip
+- **Self-learning memory (RAG)** — Every chat is auto-summarised + embedded; future chats retrieve relevant past context
+- **Project Connect** — Attach a local project folder to any chat. Browse the tree, click-to-attach files, launch agents directly. `CLAUDE.md` is auto-injected into the system prompt
 - **Coding agents in Docker** — Aider (default), OpenCode, Codex, Gemini CLI. Fire from chat → clone repo → edit → PR
+- **Side-by-side diff viewer** for agent-job output (unified + side-by-side toggle, word-level intra-line highlighting)
 - **Cluster pipelines** — Chain multi-role agents (planner → reviewer → coder → tester) with one-click templates
 - **GitHub PR triggers** — Comment `/ghostbot fix this` on a PR, the bot picks it up and pushes a fix
 - **Telegram + Slack alerts** — Get pinged when agent jobs finish
 - **Autonomous Builder** — LLM-planned multi-step builds with progress tracking, retries, and SSE updates
 - **AI Scanner** — Daily self-reflecting cron distills recent sessions into insights + self-improvement suggestions
 - **AIOS / Skills** — Per-user business context and voice injected into every prompt; reusable `/skill-name` prompt templates
-- **Multi-user** — Admin invites via one-time links, each user has isolated chat + memory
+- **Multi-user** — Admin invites via one-time links, each user has isolated chat + memory, ownership enforced at DB layer
+- **PWA install** — Add-to-Home-Screen on mobile; standalone window, offline shell cache
+- **Demo mode** — Set `DEMO_MODE=true` for a sandboxed public instance (agent jobs + secret saves disabled); see [docs/DEMO.md](docs/DEMO.md)
 - **Admin backup** — One-click JSON export of the whole DB before risky migrations
-- **VS Code extension** — Embed the live GhostBot UI inside your editor
+- **VS Code extension** — Embed the live GhostBot UI inside your editor (see [vscode-extension/PUBLISHING.md](vscode-extension/PUBLISHING.md) for Marketplace publish)
 
 ---
 
@@ -329,16 +339,30 @@ GhostBot is designed for **single-server, single-owner or small-team** deploymen
 
 ## Roadmap
 
-Tracked in detail in `docs/superpowers/` (design specs + implementation plans per feature):
+Design specs + implementation plans live in `docs/superpowers/`.
 
-- ✅ Phase 1 — public landing page, docker-compose, repo polish (shipped)
-- ✅ Phase 2.1 — first-run setup wizard (shipped)
-- ⏳ Phase 2.2 — expanded `/docs` in-app guide
-- ⏳ Phase 3.1 — CI/CD (GitHub Actions for lint/build + E2E Playwright)
-- ⏳ Phase 3.2 — agent container resource limits
-- ⏳ Phase 3.3 — monitoring + live log streaming improvements
-- ⏳ Phase 3.4 — PWA support
-- ⏳ Phase 4 — voice-to-text input, in-browser terminal, Monaco diff viewer, hosted demo
+**Shipped:**
+- ✅ Phase 1 — public landing page, docker-compose, repo polish
+- ✅ Phase 2.1 — first-run setup wizard at `/setup`
+- ✅ Phase 2.2 — expanded in-app `/docs` (Getting Started, Project Connect, Clusters, Troubleshooting)
+- ✅ Phase 2.3 — Docker mount & security docs section
+- ✅ Phase 3.1 — CI/CD (GitHub Actions: lint/build on PR, release on tag → GHCR)
+- ✅ Phase 3.2 — agent container resource limits (Memory/NanoCpus/PidsLimit/timeout) + docker-socket-proxy
+- ✅ Phase 3.3 — monitoring + live log streaming (already shipped pre-Phase-3)
+- ✅ Phase 3.4 — PWA (manifest.json + service worker)
+- ✅ Phase 4.1 — voice-to-text input + diff2html side-by-side viewer
+- ✅ Phase 4.2 — single-server ceiling documented in [docs/SCALING.md](docs/SCALING.md)
+- ✅ Phase 4.3 — DEMO_MODE + live demo at [demo.ghostbot.dev](https://demo.ghostbot.dev)
+- ✅ 10-finding security audit patched (command injection, webhook fail-open, ownership gates; see commit history)
+- ✅ `ENCRYPTION_KEY` split from `AUTH_SECRET`; extended rate limiting to every `/api/*` route
+- ✅ `src/proxy.js` (Next.js 16 convention) replaces the old `middleware.js`
+
+**Deferred (need dedicated design/work):**
+- ⏳ Monaco as in-browser file editor for Project Connect (save/publish/revert flow needs its own design)
+- ⏳ In-browser terminal beyond the existing workspace-shell surface
+- ⏳ Additional coding-agent images (Claude Code, Cline, Cursor-agent, etc.)
+- ⏳ Light-mode per-component polish
+- ⏳ VS Code Marketplace publish (extension packaging + guide done; see [vscode-extension/PUBLISHING.md](vscode-extension/PUBLISHING.md) — you run `vsce publish`)
 
 ---
 
