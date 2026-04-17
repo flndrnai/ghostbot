@@ -57,19 +57,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract changelog entry for this tag
+      - name: Generate release notes from commits
         id: changelog
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Pull the most recent changelog section — if you maintain
-          # per-version sections in CHANGELOG.md, this will land them
-          # in the release notes. Falls back to "see changelog" if the
-          # file or section isn't found.
-          if [ -f CHANGELOG.md ]; then
-            awk "/^## /{flag=!flag; if(!flag && found) exit; if(flag) found=1; next} found" CHANGELOG.md > RELEASE_NOTES.md || echo "See CHANGELOG.md" > RELEASE_NOTES.md
-          else
-            echo "See CHANGELOG.md" > RELEASE_NOTES.md
-          fi
+          # List commits since the previous tag (falls back to last 50
+          # commits if no previous tag exists). CHANGELOG.md is kept
+          # locally by the maintainer but not committed to the repo.
+          PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || echo "")
+          {
+            echo "## Changes"
+            echo
+            if [ -n "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s" "${PREV_TAG}..${GITHUB_REF_NAME}" --no-merges
+            else
+              git log --pretty=format:"- %s" -n 50 --no-merges
+            fi
+          } > RELEASE_NOTES.md
 
       - name: Create release
         uses: softprops/action-gh-release@v2

@@ -329,7 +329,7 @@ GhostBot is designed for **single-server, single-owner or small-team** deploymen
 
 ## Roadmap
 
-Tracked in detail in [CLAUDE.md §Annex](CLAUDE.md) and `docs/superpowers/`:
+Tracked in detail in `docs/superpowers/` (design specs + implementation plans per feature):
 
 - ✅ Phase 1 — public landing page, docker-compose, repo polish (shipped)
 - ✅ Phase 2.1 — first-run setup wizard (shipped)

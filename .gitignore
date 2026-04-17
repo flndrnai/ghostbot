@@ -46,3 +46,8 @@ npm-debug.log*
 # Claude Code
 .claude/
 .superpowers/
+
+# Private project notes (kept local only — not on public GitHub)
+CLAUDE.md
+CHANGELOG.md
+GHOSTBOT_PROJECT_DETAILS.md

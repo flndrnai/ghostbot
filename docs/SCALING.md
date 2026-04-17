@@ -103,6 +103,5 @@ Each step is independent. Tackle them in order, stop as soon as the pain stops.
 
 ## Related docs
 
-- [CLAUDE.md](../CLAUDE.md) — architecture overview and coded conventions
 - [SECURITY.md](../SECURITY.md) — threat model (explicitly single-tenant-trusted-admin)
 - [docs/OLLAMA_QWEN_SETUP.md](OLLAMA_QWEN_SETUP.md) — Ollama VPS setup + KVM8 migration checklist

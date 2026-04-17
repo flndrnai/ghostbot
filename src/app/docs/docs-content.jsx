@@ -784,8 +784,8 @@ export function DocsContent() {
                   <li><strong>Code conventions</strong> — naming, file layout, architectural rules</li>
                   <li><strong>Known issues</strong> — things you don&apos;t want the LLM to break</li>
                 </ul>
-                The GhostBot repo&apos;s own <code>CLAUDE.md</code> is a good template — it&apos;s
-                the file the builder-loop auto-updates after each shipped feature.
+                Tip: use the Autonomous Builder — it writes sections to <code>CLAUDE.md</code>
+                automatically after each shipped feature, so you don&apos;t have to update it by hand.
               </Block>
 
               <Block label="Launching agents on a project">
@@ -926,7 +926,7 @@ export function DocsContent() {
                 Two useful places:
                 <ul className="list-disc pl-5 space-y-1.5 mt-2">
                   <li><strong>Dokploy logs</strong> — every unhandled error surfaces here first. Look for rate-limit 429s, docker-proxy 403s, auth errors</li>
-                  <li><strong>CLAUDE.md</strong> (in the repo root) — the &quot;What&apos;s shipped&quot; and &quot;Security hardening follow-ups&quot; sections tell you exactly what&apos;s wired up and what isn&apos;t yet</li>
+                  <li><strong>Your own project&apos;s CLAUDE.md</strong> — keep &quot;What&apos;s shipped&quot; and &quot;Known issues&quot; sections up to date; it&apos;s the fastest way to see what&apos;s wired up and what isn&apos;t yet</li>
                 </ul>
               </Block>
             </Section>
