@@ -22,9 +22,10 @@ services:
     container_name: ghostbot-demo
     restart: unless-stopped
     # No host port binding — Dokploy's Traefik proxy handles routing.
-    # If you run this outside Dokploy, uncomment the ports line.
-    # ports:
-    #   - "3000:3000"
+    # Routing + TLS is configured via the Dokploy UI (Domains tab),
+    # NOT via Traefik labels in this compose. Mixing the two caused
+    # the certresolver to silently fail and Traefik to fall back to
+    # its self-signed default cert.
     expose:
       - "3000"
     volumes:
@@ -32,21 +33,6 @@ services:
       - ./scripts/demo-reset.sh:/app/scripts/demo-reset.sh:ro
     networks:
       - dokploy-network
-    labels:
-      # Traefik labels — Dokploy's reverse proxy reads these to route
-      # traffic from demo.ghostbot.dev to this container on port 3000
-      # and issues a Let's Encrypt certificate automatically.
-      - traefik.enable=true
-      - traefik.http.routers.ghostbot-demo.rule=Host(`demo.ghostbot.dev`)
-      - traefik.http.routers.ghostbot-demo.entrypoints=websecure
-      - traefik.http.routers.ghostbot-demo.tls=true
-      - traefik.http.routers.ghostbot-demo.tls.certresolver=letsencrypt
-      - traefik.http.services.ghostbot-demo.loadbalancer.server.port=3000
-      # HTTP → HTTPS redirect
-      - traefik.http.routers.ghostbot-demo-http.rule=Host(`demo.ghostbot.dev`)
-      - traefik.http.routers.ghostbot-demo-http.entrypoints=web
-      - traefik.http.routers.ghostbot-demo-http.middlewares=ghostbot-demo-https
-      - traefik.http.middlewares.ghostbot-demo-https.redirectscheme.scheme=https
     environment:
       - AUTH_SECRET=${AUTH_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
