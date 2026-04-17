@@ -5,6 +5,7 @@ import { ArrowUp, Square, Wrench, MessageSquare } from '../../icons/index.jsx';
 import { X, FolderOpen } from 'lucide-react';
 import { ProjectSelector } from './project-selector.jsx';
 import { CreateProjectFromChat } from './create-project-from-chat.jsx';
+import { MicButton } from './mic-button.jsx';
 
 // Only embed text-ish files. Hard cap to prevent blowing up the LLM context.
 const MAX_ATTACHMENT_BYTES = 64 * 1024; // 64 KB per file
@@ -336,6 +337,24 @@ export function ChatInput(props) {
             >
               {agentMode ? <Wrench className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
             </button>
+            <div className="absolute bottom-3 right-14 flex items-center">
+              <MicButton
+                disabled={isLoading}
+                onTranscript={(text, { kind }) => {
+                  // Only final chunks mutate the textarea — interim text is
+                  // noisy and overwrites itself. Append with a leading space
+                  // when there's already content so the phrases don't collide.
+                  if (kind !== 'final') return;
+                  if (typeof onInputChange !== 'function') return;
+                  const trimmed = text.trim();
+                  if (!trimmed) return;
+                  const next = input
+                    ? (input.endsWith(' ') ? input + trimmed : `${input} ${trimmed}`)
+                    : trimmed;
+                  onInputChange(next);
+                }}
+              />
+            </div>
             {isLoading ? (
               <button
                 type="button"
