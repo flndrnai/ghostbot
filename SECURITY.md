@@ -46,22 +46,63 @@ Anything that breaks the second assumption (cross-tenant access from a `user`-ro
 
 ## What ships enabled by default
 
+### Authentication & sessions
 - Password hashing: bcrypt
-- Secret storage: AES-256-GCM, key derived via PBKDF2 from `AUTH_SECRET`
-- Sessions: NextAuth v5 JWT with role + owner claims
+- Sessions: NextAuth v5 JWT with `role` + `owner` claims propagated end-to-end
 - CSRF: handled by NextAuth on auth forms; server actions protected by Next.js's built-in origin check
-- Webhook verification: HMAC-SHA256 with constant-time compare (GitHub, Telegram, generic webhook, cluster-role webhook) — all fail closed if the secret is unset
-- Rate limiting: in-process sliding window on chat, webhooks, auth, and project clone
-- Path traversal defense on Project Connect file API: absolute-path resolve + prefix check + `realpathSync` symlink check
+- Middleware (`src/proxy.js`, Next 16 convention) gates every route: public vs admin-only vs owner-only
+- First-run wizard redirect for the owner, cookie-gated to fire exactly once per browser profile
+
+### Secret storage
+- At-rest encryption: AES-256-GCM with per-value IV + auth tag
+- Key derivation: PBKDF2-SHA256 from `ENCRYPTION_KEY` if set, falling back to `AUTH_SECRET` (one-time startup warning logs)
+- Split-key support means rotating `AUTH_SECRET` (sessions) no longer forces re-encrypting the secrets table
+
+### Multi-tenant isolation
+- Server actions on clusters, cluster roles, skills, and memory entries enforce ownership at the DB layer (`WHERE id = ? AND user_id = ?`), not only at the app layer
+- `requireClusterOwner` / `requireRoleOwner` helpers throw a generic "not found" on either missing or foreign resource, preventing existence probing
+- `/stream/chat` verifies any caller-provided `chatId` belongs to the session user before accepting messages
+- Owner-only routes (`/setup`) gated by `session.user.owner === 1` in both middleware and page server component
+
+### Webhook receivers — all fail closed
+- GitHub (`/api/github/webhook`): HMAC-SHA256, constant-time compare. Returns 503 if `GITHUB_WEBHOOK_SECRET` unset, 403 if signature header missing
+- Telegram (`/api/telegram/webhook`): same pattern on `TELEGRAM_WEBHOOK_SECRET`
+- Generic (`/api/webhook/*`): per-trigger HMAC with `X-GhostBot-Signature: sha256=<hex>`. Triggers without a `secret` field in `triggers.json` are ignored
+- Cluster role (`/api/clusters/[cid]/roles/[rid]/webhook`): per-role HMAC via `role.triggerConfig.webhookSecret`. URL `clusterId` must also match the role's actual cluster
+
+### Docker socket sandboxing
+- Default `docker-compose.yml` does NOT bind-mount `/var/run/docker.sock` into the app container
+- Instead, a `tecnativa/docker-socket-proxy` sidecar mounts the socket read-only and exposes a restricted API allowlist over `tcp://docker-proxy:2375`
+- Allowlist: `CONTAINERS`, `IMAGES`, `NETWORKS`, `EXEC`, `POST`, `DELETE`. Everything else (AUTH/BUILD/COMMIT/CONFIGS/DISTRIBUTION/EVENTS/INFO/NODES/PLUGINS/SECRETS/SERVICES/SESSION/SWARM/SYSTEM/TASKS/VOLUMES) explicitly OFF
+- The app reads `DOCKER_HOST` env and speaks TCP to the proxy; falls back to `/var/run/docker.sock` only when `DOCKER_HOST` is unset (backward compat)
+
+### Agent container resource limits
+- Every launched agent container (`src/lib/agent-jobs/launch.js`) gets: Memory 2 GB, 1 CPU, PidsLimit 256, `SecurityOpt: no-new-privileges`, 15-minute wall-clock timeout enforced by racing `/containers/{id}/wait` against a `setTimeout` → `/containers/{id}/kill`
+- Limits are configurable via `AGENT_MEMORY_LIMIT_MB`, `AGENT_CPU_LIMIT`, `AGENT_PIDS_LIMIT`, `AGENT_TIMEOUT_SEC` settings keys
+
+### Command/path injection defenses
+- `/api/projects/clone`: uses `execFile('git', [...args])` array form (no shell), `fs.cp`/`fs.rm` instead of `cp -r`/`rm -rf`, strict HTTPS URL allowlist (rejects `$`, backtick, semicolon, ampersand, pipe, backslash, newlines, spaces, quotes)
+- Project Connect file API: absolute-path resolve + prefix check against the project root + `realpathSync` symlink check
+- Drizzle ORM parameterises every query — no string-concat SQL anywhere
+
+### Rate limiting
+- Tiered in-process sliding-window caps on every `/api/*` route, applied in `src/proxy.js` before auth. Shares the `globalThis` bucket store with `lib/rate-limit.js` so per-route + middleware caps stack correctly
+- Tiers: 10/min for scanner-run, 20–30/min for builder/webhook/projects/chat, 120/min for admin reads, 120/min default. NextAuth endpoints explicitly skipped (they have their own brute-force protections)
+- Keyed by `${ip}:${prefix}` so a burst on a cheap endpoint doesn't lock the caller out of expensive ones
+
+### Static asset handling
+- `src/proxy.js` fast-paths static-file extensions (svg/png/jpg/webp/ico/css/js/woff/etc) past the auth check, so anonymous visitors can load the landing page's assets without being 307'd to `/login`
 
 ## Hardening recommendations before public exposure
 
-See the [Security section of the README](README.md#security) for the complete checklist. Key items:
+The defaults above are what ships with a `docker compose up -d`. Additional hardening for any public-facing deploy:
 
-1. Put `/var/run/docker.sock` behind `tecnativa/docker-socket-proxy` with a restrictive allowlist
-2. Enforce per-agent container resource limits (Memory, NanoCpus, PidsLimit, wall-clock timeout)
-3. Configure every webhook secret before exposing the endpoints
-4. Never trust `user`-role accounts — treat them as a low-privilege tier, not as admins-in-waiting
+1. **Set a dedicated `ENCRYPTION_KEY`**, different from `AUTH_SECRET`. Both generated with `openssl rand -base64 32`. Split-key means rotating the session secret doesn't invalidate every stored API key/PAT
+2. **Configure every webhook secret** before exposing the endpoints (`GITHUB_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_SECRET`, per-trigger secrets in `data/triggers.json`, per-role secrets in cluster configs). The endpoints return 503 otherwise — that's intentional
+3. **Keep `docker-socket-proxy` in place.** If you've customised `docker-compose.yml` to remove it, you've opted into "admin of GhostBot = root on the host"
+4. **Never trust `user`-role accounts** — treat them as a low-privilege tier, not as admins-in-waiting. Server-side ownership checks prevent the obvious cases, but stored-prompt-injection on shared resources is still a trust boundary
+5. **Watch the Dokploy logs** for 429 bursts from unexpected IPs — that's where brute-force attempts against the chat API would show up
+6. **Use HTTPS-only** — `AUTH_TRUST_HOST=true` behind a reverse proxy (Dokploy's Traefik, Caddy, nginx). No plain-HTTP production
 
 ## Disclosure policy
 
