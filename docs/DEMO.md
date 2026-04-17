@@ -1,6 +1,8 @@
 # Hosting a GhostBot demo instance
 
-This guide covers deploying a sandboxed GhostBot instance (like `demo.ghostbot.dev`) where the public can try the app without burning your LLM budget or persisting their credentials.
+> **Live example:** [demo.ghostbot.dev](https://demo.ghostbot.dev) — deployed using the exact configuration in this document, co-resident with production `ghostbot.dev` on a single 16 GB Hostinger KVM.
+
+This guide covers deploying a sandboxed GhostBot instance — a public URL where visitors can try the app without burning your LLM budget, persisting credentials, or having access to anything destructive.
 
 ## What demo mode changes
 
@@ -78,13 +80,39 @@ docker exec ghostbot-demo-ollama ollama pull nomic-embed-text
 
 (The memory/RAG code expects `nomic-embed-text` — without it the demo's memory features fail silently.)
 
-### 6. Put TLS in front
+### 6. Let Dokploy issue the Let's Encrypt cert
 
-Caddy, nginx, or Dokploy-managed TLS. Terminate at `demo.ghostbot.dev` and proxy to `localhost:3000`.
+The `docker-compose.demo.yml` container joins the `dokploy-network` (external). Create a Traefik dynamic config at `/etc/dokploy/traefik/dynamic/ghostbot-demo.yml` on the Dokploy host — same pattern as Dokploy's own UI-generated routing files:
+
+```yaml
+http:
+  routers:
+    ghostbot-demo-router:
+      rule: Host(`demo.ghostbot.dev`)
+      service: ghostbot-demo-service
+      middlewares: [redirect-to-https]
+      entryPoints: [web]
+    ghostbot-demo-router-websecure:
+      rule: Host(`demo.ghostbot.dev`)
+      service: ghostbot-demo-service
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+  services:
+    ghostbot-demo-service:
+      loadBalancer:
+        servers:
+          - url: http://ghostbot-demo:3000
+        passHostHeader: true
+```
+
+Traefik watches this directory and picks it up within seconds. First HTTPS request triggers the ACME HTTP-01 challenge; cert issues in ~30 seconds.
+
+**Gotcha from the live deploy:** Traefik labels on the compose container + Dokploy's Domain config compete for the same router. Use one or the other, not both. The file-based config above is what Dokploy itself uses — simpler to hand-write.
 
 ### 7. First-admin signup
 
-Visit `demo.ghostbot.dev`. The first signup becomes the demo's owner/admin — but because `DEMO_MODE=true`, nothing they configure persists anyway. Use a disposable email. The setup wizard will still run but secret steps no-op.
+Visit `https://demo.ghostbot.dev`. The first signup becomes the demo's owner/admin — but because `DEMO_MODE=true`, nothing they configure persists anyway. Use a disposable email. The setup wizard will still run but secret-save steps no-op.
 
 ## Daily reset
 

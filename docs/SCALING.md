@@ -99,9 +99,12 @@ Each step is independent. Tackle them in order, stop as soon as the pain stops.
 
 **If you're planning for hundreds of users from day one:** You're building a different product. GhostBot's architecture — single-SQLite, in-process bus, owner-admin trust model — is optimised for the single-owner / small-trusted-team use case. Stretching it past that is possible but fights the grain.
 
+**If you just want a public "try it" page:** that's a different problem from scaling. Stand up a separate instance with `DEMO_MODE=true` (agent launches disabled, secrets no-op, daily DB reset). Demo instances don't need to scale — they're built to stay sandboxed and reset. See [DEMO.md](DEMO.md). [demo.ghostbot.dev](https://demo.ghostbot.dev) is the reference deploy.
+
 ---
 
 ## Related docs
 
 - [SECURITY.md](../SECURITY.md) — threat model (explicitly single-tenant-trusted-admin)
-- [docs/OLLAMA_QWEN_SETUP.md](OLLAMA_QWEN_SETUP.md) — Ollama VPS setup + KVM8 migration checklist
+- [DEMO.md](DEMO.md) — sandboxed public instance setup (different from scaling)
+- [OLLAMA_QWEN_SETUP.md](OLLAMA_QWEN_SETUP.md) — Ollama VPS setup + KVM8 migration checklist
