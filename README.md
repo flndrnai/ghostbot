@@ -132,7 +132,7 @@ Mounts:
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router, Server Actions) |
+| Framework | Next.js 16 (App Router, Server Actions) |
 | Frontend | React 19, Tailwind CSS v4, motion (animated icons), react-markdown, Sora font |
 | Backend | Node.js 20.10+ (targets 22 in production) |
 | Database | SQLite + Drizzle ORM (WAL mode) + runtime auto-migrations |
