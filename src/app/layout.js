@@ -3,6 +3,7 @@ import { Sora } from 'next/font/google';
 import { ThemeProvider } from '../lib/chat/components/theme-provider.jsx';
 import SetupBanner from '../components/SetupBanner.jsx';
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister.jsx';
+import DemoBanner from '../components/DemoBanner.jsx';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -38,6 +39,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={sora.variable} suppressHydrationWarning>
       <body className="min-h-[100dvh] bg-background text-foreground antialiased grain">
         <ThemeProvider>
+          <DemoBanner />
           <SetupBanner />
           <ServiceWorkerRegister />
           {children}

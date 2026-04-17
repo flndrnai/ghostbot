@@ -52,6 +52,13 @@ export function getConfigSecret(key) {
 }
 
 export function setConfigSecret(key, value, userId = null) {
+  // Demo mode: silently no-op on secret writes. We don't want visitor
+  // A's API key / PAT persisted and inherited by visitor B. The
+  // action reports success to keep the UI happy but nothing lands.
+  if (process.env.DEMO_MODE === 'true' || process.env.DEMO_MODE === '1') {
+    return;
+  }
+
   const db = getDb();
   const now = Date.now();
 

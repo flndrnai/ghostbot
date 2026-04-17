@@ -20,6 +20,7 @@ import {
   getAgentJob,
 } from './db.js';
 import { notifyAgentJob } from './notify.js';
+import { requireNotDemo } from '../demo.js';
 
 export async function launchAgentJob({
   chatId = null,
@@ -28,6 +29,11 @@ export async function launchAgentJob({
   agent = 'aider',
   baseBranch = 'main',
 }) {
+  // Demo mode — no agent containers launched (LLM cost + security).
+  // Thrown error surfaces to the caller which already handles failure
+  // paths; the chat UI renders the error text in the job card.
+  requireNotDemo('Agent job launching');
+
   // Check if this chat has a connected project (local project mode)
   let projectPath = null;
   if (chatId) {
