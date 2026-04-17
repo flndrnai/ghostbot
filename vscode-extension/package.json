@@ -119,9 +119,12 @@
   },
   "scripts": {
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "publish:patch": "vsce publish patch",
+    "publish:minor": "vsce publish minor"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0"
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0"
   }
 }
